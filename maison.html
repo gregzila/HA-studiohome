@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Studio Pro - Fix Persistance</title>
+    <title>Studio Pro - Domotique</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -24,10 +24,11 @@
         #panorama { width: 100%; height: 100%; display: none; }
         .fab-container { position: fixed; bottom: 100px; right: 20px; z-index: 1500; display: flex; flex-direction: column; gap: 10px; }
         .fab { width: 55px; height: 55px; border-radius: 50%; border: none; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.2rem; cursor: pointer; }
-        .modal-advanced { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; padding: 15px; }
-        .modal-content-advanced { background: var(--dark); border-radius: 20px; width: 100%; max-width: 500px; margin: 10vh auto; border: 1px solid var(--glass-border); overflow: hidden; }
+        .modal-advanced { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000; padding: 15px; overflow-y: auto; }
+        .modal-content-advanced { background: var(--dark); border-radius: 20px; width: 100%; max-width: 500px; margin: 5vh auto; border: 1px solid var(--glass-border); overflow: hidden; }
         .form-input-advanced { width: 100%; padding: 12px; background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); border-radius: 10px; color: white; margin-bottom: 15px; }
         .custom-hotspot { width: 34px; height: 34px; border-radius: 50%; border: 2px solid white; display: flex; align-items: center; justify-content: center; font-size: 18px; cursor: pointer; }
+        #add-room-btn { background: var(--glass); border: 1px dashed var(--glass-border); color: white; text-align: center; padding: 15px; border-radius: 12px; cursor: pointer; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -41,19 +42,27 @@
     <div class="fw-bold text-primary me-3">STUDIO PRO</div>
     <div id="current-room-name" class="fw-bold small">...</div>
     <div style="margin-left: auto; display: flex; gap: 8px;">
-        <button class="btn btn-sm btn-outline-light" onclick="toggle360View()"><i class="fas fa-globe"></i> 360</button>
+        <button id="toggle-view-btn" class="btn btn-sm btn-outline-light" onclick="toggle360View()"><i class="fas fa-globe"></i> Vision 360</button>
         <button class="btn btn-sm btn-outline-light" onclick="toggleFS()"><i class="fas fa-expand"></i></button>
     </div>
 </div>
 
-<div class="sidebar" id="sidebar"><div id="rooms-container"></div></div>
+<div class="sidebar" id="sidebar">
+    <div id="rooms-container"></div>
+    <div id="add-room-btn" onclick="openAddRoomModal()">
+        <i class="fas fa-plus"></i> Ajouter une pièce
+    </div>
+</div>
 
 <div class="main-content">
     <div id="view-wrapper">
         <img src="" id="plan-img" onclick="handleImgClick(event)">
         <div id="panorama"></div>
     </div>
-    <div class="mt-2 d-flex justify-content-between"><div id="current-room-temp" class="badge bg-primary">--°C</div><div id="sync-info" class="small text-white-50"></div></div>
+    <div class="mt-2 d-flex justify-content-between">
+        <div id="current-room-temp" class="badge bg-primary">--°C</div>
+        <div id="sync-info" class="small text-white-50"></div>
+    </div>
 </div>
 
 <div class="fab-container">
@@ -61,43 +70,91 @@
     <button class="fab bg-success" id="fab-save" style="display:none" onclick="saveHotspots()"><i class="fas fa-save"></i> SAUVEGARDER</button>
 </div>
 
+<!-- MODALS -->
 <div class="modal-advanced" id="hotspotModal">
     <div class="modal-content-advanced">
-        <div class="p-3 bg-primary d-flex justify-content-between"><h6>Config</h6><button class="btn-close btn-close-white" onclick="closeHotspotModal()"></button></div>
+        <div class="p-3 bg-primary d-flex justify-content-between"><h6>Configuration du Hotspot</h6><button class="btn-close btn-close-white" onclick="closeHotspotModal()"></button></div>
         <div class="p-3">
-            <input type="hidden" id="edit-idx"><input type="hidden" id="edit-type">
+            <input type="hidden" id="edit-idx">
             <label class="small opacity-50">NOM</label><input type="text" id="hotspot-name" class="form-input-advanced">
             <label class="small opacity-50">ID ENTITÉ HA</label><input type="text" id="hotspot-entity" class="form-input-advanced">
-            <div class="d-flex gap-2"><button class="btn btn-danger w-100" onclick="deleteHotspot()">Supprimer</button><button class="btn btn-primary w-100" onclick="confirmHotspot()">Appliquer</button></div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-danger w-100" onclick="deleteHotspot()">Supprimer</button>
+                <button class="btn btn-primary w-100" onclick="confirmHotspot()">Appliquer</button>
+            </div>
         </div>
     </div>
 </div>
 
+<div class="modal-advanced" id="addRoomModal">
+    <div class="modal-content-advanced">
+        <div class="p-3 bg-success d-flex justify-content-between"><h6>Ajouter une nouvelle pièce</h6><button class="btn-close btn-close-white" onclick="closeAddRoomModal()"></button></div>
+        <div class="p-3">
+            <label class="small opacity-50">NOM DE LA PIÈCE</label>
+            <input type="text" id="new-room-name" class="form-input-advanced" placeholder="Ex: Bureau">
+            
+            <label class="small opacity-50">ICÔNE</label>
+            <input type="text" id="new-room-icon" class="form-input-advanced" placeholder="Ex: 💻">
+            
+            <label class="small opacity-50">IMAGE PLAN 2D</label>
+            <input type="file" id="new-room-img-2d" class="form-input-advanced">
+            
+            <label class="small opacity-50">IMAGE VUE 360</label>
+            <input type="file" id="new-room-img-360" class="form-input-advanced">
+            
+            <label class="small opacity-50">ID CAPTEUR TEMPÉRATURE (Optionnel)</label>
+            <input type="text" id="new-room-temp-sensor" class="form-input-advanced" placeholder="Ex: sensor.temperature_bureau">
+            
+            <button class="btn btn-success w-100 mt-3" onclick="addNewRoom()">Créer la pièce</button>
+        </div>
+    </div>
+</div>
+
+
 <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 <script>
-const ROOMS = [
-    { n: "Cuisine", img: "Cuisine.jpg", img360: "Cuisine__1.jpg" },
-    { n: "Salon", img: "Salon.jpg", img360: "Salon.jpg" },
-    { n: "Elisa", img: "Elisa.jpg", img360: "Elisa.jpg" },
-    { n: "Justine", img: "Justine.jpg", img360: "Justine.jpg" },
-    { n: "Parents", img: "Chambreparents.jpg", img360: "Chambreparents.jpg" }
-];
-
+let CONFIG = {
+    ha_url: "",
+    ha_token: "",
+    rooms: []
+};
 let curR = 0, hotspots = [], editMode = false, is360Active = false, panoViewer = null;
 
-async function init() { renderRooms(); await switchRoom(0); }
+async function loadConfig() {
+    try {
+        const response = await fetch(`config.json?v=${new Date().getTime()}`);
+        CONFIG = await response.json();
+    } catch (e) {
+        console.error("Failed to load config.json. Make sure it exists and is valid.", e);
+        showStatus("Erreur: Impossible de charger config.json", "danger", false);
+    }
+}
+
+async function init() {
+    await loadConfig();
+    renderRooms();
+    if (CONFIG.rooms.length > 0) {
+        await switchRoom(0);
+    } else {
+        // Handle case with no rooms
+        document.getElementById('current-room-name').innerText = "Aucune pièce";
+        document.getElementById('plan-img').style.display = 'none';
+        document.getElementById('panorama').style.display = 'none';
+    }
+}
 
 function renderRooms() {
-    document.getElementById('rooms-container').innerHTML = ROOMS.map((r, i) => `
+    document.getElementById('rooms-container').innerHTML = CONFIG.rooms.map((r, i) => `
         <div class="room-card ${i === curR ? 'active' : ''}" onclick="switchRoom(${i})">
-            <div class="fw-bold">${r.n}</div>
+            <div class="fw-bold">${r.icon} ${r.n}</div>
+            <div class="small opacity-75" id="temp-${i}">--°C</div>
         </div>`).join('');
 }
 
 async function switchRoom(idx) {
     curR = idx;
     renderRooms();
-    const room = ROOMS[curR];
+    const room = CONFIG.rooms[curR];
     document.getElementById('current-room-name').innerText = room.n;
     document.getElementById('plan-img').src = room.img;
     
@@ -107,16 +164,39 @@ async function switchRoom(idx) {
         hotspots = config.hotspots || [];
         
         document.getElementById('sync-info').innerText = `Chargé: ${hotspots.length} hotspots`;
-        if(is360Active) initPannellum();
+        if (is360Active) {
+            initPannellum();
+        } else {
+            // Logic for 2D view if any
+        }
+        updateTemp();
     } catch(e) {
         hotspots = [];
         console.error("Could not load config for room " + room.n, e);
     }
 }
 
+async function updateTemp() {
+    const room = CONFIG.rooms[curR];
+    if (!room.temp) {
+        document.getElementById('current-room-temp').innerText = "--°C";
+        return;
+    }
+    try {
+        const res = await fetch(`${CONFIG.ha_url}/api/states/${room.temp}`, {
+            headers: {"Authorization": `Bearer ${CONFIG.ha_token}`, "Content-Type": "application/json"}
+        });
+        const data = await res.json();
+        document.getElementById('current-room-temp').innerText = `${data.state || '--'}°C`;
+        document.getElementById(`temp-${curR}`).innerText = `${data.state || '--'}°C`;
+    } catch(e) {
+        console.error("Failed to fetch temperature", e);
+    }
+}
+
 function initPannellum() {
     if(panoViewer) panoViewer.destroy();
-    const room = ROOMS[curR];
+    const room = CONFIG.rooms[curR];
     panoViewer = pannellum.viewer('panorama', {
         "type": "equirectangular",
         "panorama": room.img360,
@@ -126,9 +206,7 @@ function initPannellum() {
             pitch: h.pitch,
             yaw: h.yaw,
             cssClass: 'custom-hotspot',
-            createTooltipFunc: (div) => {
-                div.innerHTML = h.name || '💡';
-            },
+            createTooltipFunc: (div) => { div.innerHTML = h.name || '💡'; },
             clickHandlerFunc: () => editMode ? openHotspotModal(i) : handleAction(h)
         }))
     });
@@ -138,7 +216,7 @@ function initPannellum() {
         if(coords) {
             hotspots.push({ name: "New Hotspot", pitch: coords[0], yaw: coords[1], entity_id: "" });
             initPannellum();
-            setTimeout(() => openHotspotModal(hotspots.length-1), 200);
+            setTimeout(() => openHotspotModal(hotspots.length - 1), 200);
         }
     });
 }
@@ -147,13 +225,17 @@ function toggle360View() {
     is360Active = !is360Active;
     document.getElementById('panorama').style.display = is360Active ? 'block' : 'none';
     document.getElementById('plan-img').style.display = is360Active ? 'none' : 'block';
-    if(is360Active) initPannellum();
+    document.getElementById('toggle-view-btn').innerHTML = is360Active ? '<i class="fas fa-map"></i> Plan 2D' : '<i class="fas fa-globe"></i> Vision 360';
+    if (is360Active) initPannellum();
 }
 
 function handleAction(item) {
-    if(!item.entity_id) return;
-    // Your Home Assistant action logic here
-    console.log("Executing action for:", item.entity_id);
+    if(!item.entity_id || !CONFIG.ha_url) return;
+    fetch(`${CONFIG.ha_url}/api/services/homeassistant/toggle`, {
+        method: 'POST',
+        headers: {"Authorization": `Bearer ${CONFIG.ha_token}`, "Content-Type": "application/json"},
+        body: JSON.stringify({entity_id: item.entity_id})
+    }).catch(e => console.error("Action failed:", e));
 }
 
 function openHotspotModal(idx) {
@@ -169,14 +251,14 @@ function confirmHotspot() {
     hotspots[idx].name = document.getElementById('hotspot-name').value;
     hotspots[idx].entity_id = document.getElementById('hotspot-entity').value;
     closeHotspotModal();
-    initPannellum();
+    if (is360Active) initPannellum();
 }
 
 function deleteHotspot() {
     const idx = document.getElementById('edit-idx').value;
     hotspots.splice(idx, 1);
     closeHotspotModal();
-    initPannellum();
+    if (is360Active) initPannellum();
 }
 
 function toggleEdit() {
@@ -186,14 +268,8 @@ function toggleEdit() {
 }
 
 async function saveHotspots() {
-    const room = ROOMS[curR];
-    const bubble = document.getElementById('status-bubble');
-    const msg = document.getElementById('status-message');
-    
-    bubble.style.display = 'block';
-    bubble.style.background = 'rgba(245, 158, 11, 0.9)';
-    msg.innerHTML = "Sauvegarde en cours...";
-
+    const room = CONFIG.rooms[curR];
+    showStatus("Sauvegarde en cours...", "warning");
     try {
         const response = await fetch('save_hotspots.php', {
             method: 'POST',
@@ -203,25 +279,82 @@ async function saveHotspots() {
         const result = await response.json();
 
         if (result.status === 'success') {
-            bubble.style.background = 'var(--success)';
-            msg.innerHTML = "<b>RÉUSSI !</b><br>Hotspots sauvegardés.";
-            setTimeout(() => {
-                bubble.style.display = 'none';
-                toggleEdit();
-                // No reload needed, changes are in memory
-            }, 2000);
+            showStatus("Hotspots sauvegardés !", "success");
+            toggleEdit();
         } else {
             throw new Error(result.message);
         }
-
     } catch(err) {
-        bubble.style.background = 'var(--danger)';
-        msg.innerHTML = `ERREUR: ${err.message}`;
+        showStatus(`Erreur: ${err.message}`, "danger");
     }
 }
 
+function openAddRoomModal() { document.getElementById('addRoomModal').style.display = 'block'; }
+function closeAddRoomModal() { document.getElementById('addRoomModal').style.display = 'none'; }
+
+async function addNewRoom() {
+    const name = document.getElementById('new-room-name').value.trim();
+    const icon = document.getElementById('new-room-icon').value.trim();
+    const img2dFile = document.getElementById('new-room-img-2d').files[0];
+    const img360File = document.getElementById('new-room-img-360').files[0];
+    const tempSensor = document.getElementById('new-room-temp-sensor').value.trim();
+
+    if (!name || !icon || !img2dFile || !img360File) {
+        alert("Veuillez remplir tous les champs obligatoires.");
+        return;
+    }
+
+    showStatus("Ajout de la pièce...", "warning");
+
+    const formData = new FormData();
+    formData.append("name", name);
+    formData.append("icon", icon);
+    formData.append("img2d", img2dFile);
+    formData.append("img360", img360File);
+    formData.append("temp", tempSensor);
+
+    try {
+        const response = await fetch("add_room.php", {
+            method: "POST",
+            body: formData
+        });
+        const result = await response.json();
+        if (result.status === 'success') {
+            showStatus("Pièce ajoutée avec succès !", "success");
+            closeAddRoomModal();
+            await init(); // Re-initialize the app
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (err) {
+        showStatus(`Erreur: ${err.message}`, "danger");
+    }
+}
+
+
 function closeHotspotModal() { document.getElementById('hotspotModal').style.display = 'none'; }
 function toggleFS() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+
+function showStatus(message, type = "info", autoHide = true) {
+    const bubble = document.getElementById('status-bubble');
+    const msg = document.getElementById('status-message');
+    const icon = document.getElementById('status-icon');
+
+    bubble.style.background = `var(--${type})`;
+    msg.innerHTML = message;
+    
+    switch(type) {
+        case 'success': icon.innerHTML = '<i class="fas fa-check-circle fa-2x mb-2"></i>'; break;
+        case 'danger':  icon.innerHTML = '<i class="fas fa-times-circle fa-2x mb-2"></i>'; break;
+        default: icon.innerHTML = '<i class="fas fa-spinner fa-spin fa-2x mb-2"></i>'; break;
+    }
+
+    bubble.style.display = 'block';
+    if (autoHide) {
+        setTimeout(() => { bubble.style.display = 'none'; }, 3000);
+    }
+}
+
 
 init();
 </script>

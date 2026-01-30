@@ -1,0 +1,41 @@
+{
+    "ha_url": "https://qq5e0tspgj2a22alvsqitgptzj2sz0o4.ui.nabu.casa",
+    "ha_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyM2QwMGZhNDdhYzM0NTgzYmFlM2UzMGRiMWMwMzBjMyIsImlhdCI6MTc2OTQyNzk1MiwiZXhwIjoyMDg0Nzg3OTUyfQ.qCik3fu6D-CqVg6RVuoQjF4g8zbM2ZXtYu3LVxrGVEs",
+    "rooms": [
+        {
+            "n": "Cuisine",
+            "icon": "🍳",
+            "img": "Cuisine.jpg",
+            "img360": "Cuisine__1.jpg",
+            "temp": "sensor.temperature_cuisine_2"
+        },
+        {
+            "n": "Salon",
+            "icon": "🛋️",
+            "img": "Salon.jpg",
+            "img360": "Salon.jpg",
+            "temp": "sensor.temp_salon"
+        },
+        {
+            "n": "Elisa",
+            "icon": "🌸",
+            "img": "Elisa.jpg",
+            "img360": "Elisa.jpg",
+            "temp": "sensor.current_temperature_chambre_elisa"
+        },
+        {
+            "n": "Justine",
+            "icon": "⭐",
+            "img": "Justine.jpg",
+            "img360": "Justine.jpg",
+            "temp": "sensor.sensor_temp_justine"
+        },
+        {
+            "n": "Parents",
+            "icon": "👥",
+            "img": "Chambreparents.jpg",
+            "img360": "Chambreparents.jpg",
+            "temp": "sensor.current_temperature_chambre_parent"
+        }
+    ]
+}
