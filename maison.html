@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Studio Domotique 360 PRO - VAR</title>
+    <title>Maison Izon</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -48,6 +48,7 @@
 <button class="btn-menu" onclick="document.getElementById('side-menu').classList.toggle('open')"><i class="fas fa-bars"></i></button>
 
 <div id="top-info">
+    <h1 style="font-size: 1.5rem; color: #fff; text-shadow: 0 0 5px var(--accent);">Maison Izon</h1>
     <div id="room-name">...</div>
     <div id="temp-badge" class="badge bg-dark border border-info mt-1">--°C</div>
 </div>
@@ -58,10 +59,46 @@
     <button id="btn-save" class="btn btn-success btn-sm rounded-pill d-none" onclick="saveToHA()">SAUVER</button>
 </div>
 
-<div id="plan-wrapper">...</div>
+<div id="plan-wrapper">
+    <div id="plan-container">
+        <img id="plan-img" src="maison.jpg" alt="Plan de la maison" ondragstart="return false;">
+        <svg id="svg-overlay" onclick="handleMapClick(event)"></svg>
+    </div>
+    <div id="panorama"></div>
+</div>
+
 <div id="modal-overlay" onclick="closeModal()"></div>
-<div id="ha-modal">...</div>
-<div class="modal fade" id="configModal">...</div>
+<div id="ha-modal">
+    <span class="close-btn" onclick="closeModal()">&times;</span>
+    <iframe id="ha-frame" src="about:blank" style="width: 100%; height: 100%; border: none; border-radius: 20px;"></iframe>
+</div>
+
+<div class="modal fade" id="configModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title">Configurer</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-idx">
+                <input type="hidden" id="edit-type">
+                <div class="mb-3">
+                    <label for="zone-name" class="form-label">Nom</label>
+                    <input type="text" class="form-control form-control-sm bg-dark text-white" id="zone-name">
+                </div>
+                <div class="mb-3">
+                    <label for="zone-url" class="form-label">URL / Entité</label>
+                    <input type="text" class="form-control form-control-sm bg-dark text-white" id="zone-url">
+                </div>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-danger btn-sm" onclick="deleteItem()">Supprimer</button>
+                <button type="button" class="btn btn-success btn-sm" onclick="confirmItem()">OK</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
@@ -80,8 +117,13 @@ const ROOMS = [
 ];
 
 let curR = 0, zones = [], hotspots = [], currentPoints = [], editMode = false, is360Active = false, panoViewer = null;
-const bModal = new bootstrap.Modal(document.getElementById('configModal'));
+const configModal = new bootstrap.Modal(document.getElementById('configModal'));
 const headers = { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" };
+const svgOverlay = document.getElementById('svg-overlay');
+const drawLine = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+drawLine.setAttribute("id", "draw-line");
+svgOverlay.appendChild(drawLine);
+
 
 async function callService(service, entity_id, data = {}) {
     if(!entity_id) return;
@@ -189,32 +231,152 @@ function toggle360View() {
     if (is360Active) initPannellum();
 }
 
-// ... Garder les fonctions handleMapClick, updateDrawLine, onkeydown, drawZones, initPannellum, etc.
-// ... Garder les fonctions d'édition : toggleEdit, openConfig, confirmItem, deleteItem
-// ... Garder les fonctions de modal: handleAction, closeModal
+function syncSVG() { 
+    const img = document.getElementById('plan-img'); 
+    if(!img.clientWidth) return; 
+    svgOverlay.setAttribute("viewBox", `0 0 ${img.clientWidth} ${img.clientHeight}`); 
+    svgOverlay.style.width = img.clientWidth + "px"; 
+    svgOverlay.style.height = img.clientHeight + "px"; 
+    drawZones(); 
+}
+
+function handleMapClick(e) { 
+    if(!editMode || is360Active) return; 
+    const img = document.getElementById('plan-img'); 
+    const rect = img.getBoundingClientRect(); 
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100); 
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100); 
+    currentPoints.push(`${x},${y}`); 
+    updateDrawLine(); 
+}
+
+function updateDrawLine() { 
+    const img = document.getElementById('plan-img'); 
+    const rect = img.getBoundingClientRect(); 
+    const pts = currentPoints.map(p => { const [px, py] = p.split(','); return `${(px * rect.width) / 100},${(py * rect.height) / 100}`; }).join(' '); 
+    drawLine.setAttribute("points", pts); 
+}
+
+window.onkeydown = (e) => { 
+    if(e.key === "Enter" && currentPoints.length > 2) { 
+        zones.push({ n: "Nouveau", p: currentPoints.join(' '), u: "" }); 
+        currentPoints = []; 
+        drawLine.setAttribute("points", ""); 
+        drawZones(); 
+        openConfig(zones.length - 1, '2D'); 
+    } 
+};
+
+function drawZones() { 
+    // Clear all polygons except the drawing line
+    while (svgOverlay.childNodes.length > 1) {
+        svgOverlay.removeChild(svgOverlay.lastChild);
+    }
+
+    zones.forEach((z, i) => { 
+        const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon"); 
+        const img = document.getElementById('plan-img');
+        const pts = z.p.split(' ').map(p => { 
+            const [px, py] = p.split(','); 
+            return `${px * img.clientWidth / 100},${py * img.clientHeight / 100}`; 
+        }).join(' '); 
+        poly.setAttribute("points", pts); 
+        poly.setAttribute("class", "zone-poly"); 
+        poly.onclick = (e) => { e.stopPropagation(); editMode ? openConfig(i, '2D') : handleAction(z); }; 
+        svgOverlay.appendChild(poly); 
+    }); 
+}
+
+function initPannellum() { 
+    if(panoViewer) panoViewer.destroy(); 
+    panoViewer = pannellum.viewer('panorama', { 
+        "type": "equirectangular", 
+        "panorama": ROOMS[curR].img360, 
+        "autoLoad": true, 
+        "showControls": false, 
+        "hotSpots": hotspots.map((h, i) => ({ 
+            pitch: parseFloat(h.pi), 
+            yaw: parseFloat(h.y), 
+            cssClass: 'custom-hotspot', 
+            clickHandlerFunc: () => editMode ? openConfig(i, '360') : handleAction(h) 
+        })) 
+    }); 
+    panoViewer.on('mousedown', (e) => { 
+        if(!editMode) return; 
+        const c = panoViewer.mouseEventToCoords(e); 
+        if(c) { 
+            hotspots.push({ n: "Point", pi: Math.round(c[0]), y: Math.round(c[1]), u: "" }); 
+            initPannellum(); 
+            setTimeout(() => openConfig(hotspots.length - 1, '360'), 200); 
+        } 
+    }); 
+}
+
+function toggleEdit() { 
+    editMode = !editMode; 
+    document.getElementById('btn-edit').innerText = editMode ? "FINIR" : "ÉDIT"; 
+    document.getElementById('btn-save').classList.toggle('d-none', !editMode); 
+    svgOverlay.classList.toggle('edit-active', editMode); 
+    currentPoints = []; 
+    updateDrawLine(); 
+}
+
+function openConfig(idx, type) { 
+    document.getElementById('edit-idx').value = idx; 
+    document.getElementById('edit-type').value = type; 
+    const item = (type === '360') ? hotspots[idx] : zones[idx]; 
+    document.getElementById('zone-name').value = item.n; 
+    document.getElementById('zone-url').value = item.u; 
+    configModal.show(); 
+}
+
+function confirmItem() { 
+    const i = document.getElementById('edit-idx').value; 
+    const type = document.getElementById('edit-type').value; 
+    const item = (type === '360') ? hotspots[i] : zones[i]; 
+    item.n = document.getElementById('zone-name').value; 
+    item.u = document.getElementById('zone-url').value; 
+    configModal.hide(); 
+    if (is360Active) initPannellum(); else drawZones(); 
+}
+
+function deleteItem() { 
+    const i = document.getElementById('edit-idx').value; 
+    if(document.getElementById('edit-type').value === '360') { 
+        hotspots.splice(i, 1); 
+    } else { 
+        zones.splice(i, 1); 
+    } 
+    configModal.hide(); 
+    if (is360Active) initPannellum(); else drawZones(); 
+}
+
+async function handleAction(item) { 
+    const url = item.u || item.url; 
+    if(!url) return; 
+    if(url.includes('.') && !url.includes('/')) { 
+        await callService('homeassistant.toggle', url); 
+    } else { 
+        document.getElementById('ha-frame').src = url; 
+        document.getElementById('ha-modal').style.display = 'block'; 
+        document.getElementById('modal-overlay').style.display = 'block'; 
+    } 
+}
+
+function closeModal() { 
+    document.getElementById('ha-modal').style.display='none'; 
+    document.getElementById('modal-overlay').style.display='none'; 
+    document.getElementById('ha-frame').src = 'about:blank';
+}
 
 // Initialisation
 (async () => {
     await switchRoom(0);
     updateAllStatuses();
-    setInterval(updateAllStatuses, 30000); // Met à jour les statuts toutes les 30 secondes
+    setInterval(updateAllStatuses, 30000); 
     window.onresize = syncSVG;
     document.getElementById('plan-img').onload = syncSVG;
 })();
-
-// -- Les fonctions non modifiées sont ici pour la complétude --
-function syncSVG() { const img = document.getElementById('plan-img'); const svg = document.getElementById('svg-overlay'); if(!img.clientWidth) return; svg.setAttribute("viewBox", `0 0 ${img.clientWidth} ${img.clientHeight}`); svg.style.width = img.clientWidth + "px"; svg.style.height = img.clientHeight + "px"; drawZones(); }
-function handleMapClick(e) { if(!editMode || is360Active) return; const img = document.getElementById('plan-img'); const rect = img.getBoundingClientRect(); const x = Math.round(((e.clientX - rect.left) / rect.width) * 100); const y = Math.round(((e.clientY - rect.top) / rect.height) * 100); currentPoints.push(`${x},${y}`); updateDrawLine(); }
-function updateDrawLine() { const img = document.getElementById('plan-img'); const rect = img.getBoundingClientRect(); const pts = currentPoints.map(p => { const [px, py] = p.split(','); return `${(px * rect.width) / 100},${(py * rect.height) / 100}`; }).join(' '); document.getElementById('draw-line').setAttribute("points", pts); }
-window.onkeydown = (e) => { if(e.key === "Enter" && currentPoints.length > 2) { zones.push({ n: "Nouveau", p: currentPoints.join(' '), u: "" }); currentPoints = []; document.getElementById('draw-line').setAttribute("points", ""); drawZones(); openConfig(zones.length - 1, '2D'); } };
-function drawZones() { const svg = document.getElementById('svg-overlay'); const img = document.getElementById('plan-img'); const line = document.getElementById('draw-line'); svg.innerHTML = ''; svg.appendChild(line); zones.forEach((z, i) => { const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon"); const pts = z.p.split(' ').map(p => { const [px, py] = p.split(','); return `${px * img.clientWidth / 100},${py * img.clientHeight / 100}`; }).join(' '); poly.setAttribute("points", pts); poly.setAttribute("class", "zone-poly"); poly.onclick = (e) => { e.stopPropagation(); editMode ? openConfig(i, '2D') : handleAction(z); }; svg.appendChild(poly); }); }
-function initPannellum() { if(panoViewer) panoViewer.destroy(); panoViewer = pannellum.viewer('panorama', { "type": "equirectangular", "panorama": ROOMS[curR].img360, "autoLoad": true, "showControls": false, "hotSpots": hotspots.map((h, i) => ({ pitch: parseFloat(h.pi), yaw: parseFloat(h.y), cssClass: 'custom-hotspot', clickHandlerFunc: () => editMode ? openConfig(i, '360') : handleAction(h) })) }); panoViewer.on('mousedown', (e) => { if(!editMode) return; const c = panoViewer.mouseEventToCoords(e); if(c) { hotspots.push({ n: "Point", pi: Math.round(c[0]), y: Math.round(c[1]), u: "" }); initPannellum(); setTimeout(() => openConfig(hotspots.length - 1, '360'), 200); } }); }
-function toggleEdit() { editMode = !editMode; document.getElementById('btn-edit').innerText = editMode ? "FINIR" : "ÉDIT"; document.getElementById('btn-save').classList.toggle('d-none', !editMode); document.getElementById('svg-overlay').classList.toggle('edit-active', editMode); currentPoints = []; updateDrawLine(); }
-function openConfig(idx, type) { document.getElementById('edit-idx').value = idx; document.getElementById('edit-type').value = type; const item = (type === '360') ? hotspots[idx] : zones[idx]; document.getElementById('zone-name').value = item.n; document.getElementById('zone-url').value = item.u; bModal.show(); }
-function confirmItem() { const i = document.getElementById('edit-idx').value; const type = document.getElementById('edit-type').value; const item = (type === '360') ? hotspots[i] : zones[i]; item.n = document.getElementById('zone-name').value; item.u = document.getElementById('zone-url').value; bModal.hide(); if (is360Active) initPannellum(); else drawZones(); }
-function deleteItem() { const i = document.getElementById('edit-idx').value; if(document.getElementById('edit-type').value === '360') { hotspots.splice(i, 1); } else { zones.splice(i, 1); } bModal.hide(); if (is360Active) initPannellum(); else drawZones(); }
-async function handleAction(item) { const url = item.u || item.url; if(!url) return; if(url.includes('.') && !url.includes('/')) { await callService('homeassistant.toggle', url); } else { document.getElementById('ha-frame').src = url; document.getElementById('ha-modal').style.display = 'block'; document.getElementById('modal-overlay').style.display = 'block'; } }
-function closeModal() { document.getElementById('ha-modal').style.display='none'; document.getElementById('modal-overlay').style.display='none'; }
 
 </script>
 </body>
