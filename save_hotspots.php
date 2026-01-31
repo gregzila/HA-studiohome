@@ -4,7 +4,15 @@ header('Content-Type: application/json');
 $response = ['status' => 'error', 'message' => 'An unknown error occurred.'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true);
+    $rawInput = file_get_contents('php://input');
+    $input = json_decode($rawInput, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        $response['message'] = 'Invalid JSON input: ' . json_last_error_msg();
+        http_response_code(400);
+        echo json_encode($response);
+        exit;
+    }
 
     if (!isset($input['room']) || !isset($input['jsonFile'])) {
         $response['message'] = 'Invalid input: room or jsonFile missing.';
@@ -19,11 +27,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Whitelist check to prevent arbitrary file writing
     if (strpos($configFile, 'config_') !== 0 || strpos($configFile, '.json') === false) {
         if ($configFile !== 'config.json') {
-            $response['message'] = 'Invalid filename.';
+            $response['message'] = "Filename '{$configFile}' is not allowed.";
             http_response_code(400);
             echo json_encode($response);
             exit;
         }
+    }
+
+    if (file_exists($configFile) && !is_writable($configFile)) {
+        $response['message'] = "File '{$configFile}' exists but is not writable. Check permissions.";
+        http_response_code(500);
+        echo json_encode($response);
+        exit;
     }
 
     $dataToSave = [
@@ -32,27 +47,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'hotspots' => $input['hotspots'] ?? []
     ];
 
-    // If saving to config.json, we might want a different structure,
-    // but the user's config.json has a specific format.
-    // If configFile is config.json, we should probably merge or handle it differently.
-    // However, the user said "ca save les hotspot dans les fichier JSON config_cuisine.json for the cuisne etc..."
-    // and then "tu peux faire en sorte que ca sauvegarde dans ce fichier [config.json] ?"
+    $jsonContent = json_encode($dataToSave, JSON_PRETTY_PRINT);
 
-    if ($configFile === 'config.json') {
-        // Special handling for config.json if needed.
-        // For now let's just save room data to its specific file as requested.
-        // If they want to update config.json rooms, that's save_entities.php's job or a new one.
-    }
+    $oldMtime = file_exists($configFile) ? filemtime($configFile) : 0;
 
-    if (file_put_contents($configFile, json_encode($dataToSave, JSON_PRETTY_PRINT))) {
-        $response = ['status' => 'success', 'message' => "Data saved successfully to {$configFile}"];
+    if (file_put_contents($configFile, $jsonContent)) {
+        clearstatcache();
+        $newMtime = filemtime($configFile);
+
+        if ($newMtime > $oldMtime || (file_exists($configFile) && $oldMtime == 0)) {
+            $response = ['status' => 'success', 'message' => 'Save OK'];
+        } else {
+            $response['message'] = "File '{$configFile}' was not updated (mtime did not change).";
+            http_response_code(500);
+        }
     } else {
-        $response['message'] = "Failed to write to {$configFile}";
+        $lastError = error_get_last();
+        $response['message'] = "Failed to write to '{$configFile}'. " . ($lastError['message'] ?? '');
         http_response_code(500);
     }
 
 } else {
-    $response['message'] = 'Invalid request method.';
+    $response['message'] = 'Invalid request method: ' . $_SERVER['REQUEST_METHOD'];
     http_response_code(405);
 }
 

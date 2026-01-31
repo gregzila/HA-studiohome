@@ -1165,9 +1165,9 @@ async function saveToJSON(silent = false) {
         });
         const result = await res.json();
         if (result.status === 'success') {
-            console.log(`✅ Sauvegardé dans ${r.jsonFile}`);
+            console.log(`✅ ${result.message} dans ${r.jsonFile}`);
             if (!silent) {
-                alert(`✅ Sauvegardé sur le serveur!\n${zones.length} zones 2D\n${hotspots.length} hotspots 360°`);
+                alert(`✅ ${result.message} !\n${zones.length} zones 2D\n${hotspots.length} hotspots 360°`);
                 toggleEdit();
             }
         } else {
@@ -1175,7 +1175,7 @@ async function saveToJSON(silent = false) {
         }
     } catch (e) {
         console.error("❌ Erreur sauvegarde:", e);
-        if (!silent) alert("Erreur lors de la sauvegarde sur le serveur.");
+        if (!silent) alert("❌ Erreur de sauvegarde : " + e.message);
     }
 }
 

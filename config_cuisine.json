@@ -1,5 +1,18 @@
 {
     "room": "Cuisine",
     "zones": [],
-    "hotspots": []
+    "hotspots": [
+        {
+            "n": "Silent Save",
+            "pitch": 0,
+            "yaw": 0,
+            "u": ""
+        },
+        {
+            "n": "Persistence Test 1769869748.613535",
+            "pitch": 0,
+            "yaw": 0,
+            "u": ""
+        }
+    ]
 }
