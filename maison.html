@@ -176,8 +176,10 @@
             padding: 15px 30px;
         }
 
-        .glass-header:hover {
-            transform: translateX(-50%) !important;
+        @media (min-width: 769px) {
+            .glass-header:hover {
+                transform: translateX(-50%) !important;
+            }
         }
 
         .header-left {
@@ -1090,58 +1092,106 @@
     </div>
 </div>
 
+<!-- Modal pour les cartes Home Assistant -->
+<div class="modal fade" id="haModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass-card" style="background: rgba(15, 12, 41, 0.95); border: 1px solid rgba(255, 255, 255, 0.2); overflow: hidden;">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="haModalTitle" style="color: white; font-weight: 600;">Action</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-0" style="height: 70vh;">
+                <iframe id="haFrame" src="" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 
 <script>
-// ATTENTION: Ces informations sont sensibles. Assurez-vous de sécuriser ce fichier si vous le partagez.
-const HA_URL = "https://qq5e0tspgj2a22alvsqitgptzj2sz0o4.ui.nabu.casa";
-const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyM2QwMGZhNDdhYzM0NTgzYmFlM2UzMGRiMWMwMzBjMyIsImlhdCI6MTc2OTQyNzk1MiwiZXhwIjoyMDg0Nzg3OTUyfQ.qCik3fu6D-CqVg6RVuoQjF4g8zbM2ZXtYu3LVxrGVEs";
-
-const WEATHER_ENTITY = "weather.izon";
-const ROOMS = [
-    { n: "Cuisine", icon: "🍳", img: "Cuisine.jpg", img360: "Cuisine__1.jpg", jsonFile: "config_cuisine.json", temp: "sensor.temperature_cuisine_2", climate: "climate.thermostat_cuisine", vacuum: "button.eve_shortcut_5", window: "binary_sensor.fenetre_cuisine_porte" },
-    { n: "Salon", icon: "🛋️", img: "Salon.jpg", jsonFile: "config_salon.json", temp: "sensor.temp_salon", climate: "climate.thermostat_salon_2", vacuum: "button.eve_shortcut_6", window: "binary_sensor.fenetre_salon_porte" },
-    { n: "Elisa", icon: "🌸", img: "Elisa.jpg", jsonFile: "config_elisa.json", temp: "sensor.current_temperature_chambre_elisa", climate: "climate.thermostat_chambre_elisa_2", vacuum: "button.eve_shortcut_2", window: "binary_sensor.0xa4c138fea27bfbdf_contact" },
-    { n: "Justine", icon: "⭐", img: "Justine.jpg", jsonFile: "config_justine.json", temp: "sensor.sensor_temp_justine", climate: "climate.thermostat_justine", vacuum: "button.eve_shortcut_3", window: "binary_sensor.0xa4c138462fd3310c_contact" },
-    { n: "Parents", icon: "👥", img: "Chambreparents.jpg", jsonFile: "config_parents.json", temp: "sensor.current_temperature_chambre_parent", climate: "climate.thermostat_chambre_parents_2", vacuum: "button.eve_shortcut_1", window: "binary_sensor.0xa4c13815453e5c05_contact" }
-];
+// ATTENTION: Ces informations sont désormais chargées depuis config.json
+let HA_URL = "";
+let TOKEN = "";
+let WEATHER_ENTITY = "";
+let ROOMS = [];
 
 let curR = 0, zones = [], hotspots = [], currentPoints = [], editMode = false, is360Active = false, panoViewer = null;
-const headers = { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" };
+let headers = {};
 const bModal = new bootstrap.Modal(document.getElementById('configModal'));
+let haModalInstance = null;
 
-// ========== SAUVEGARDE / CHARGEMENT JSON LOCAL ==========
+// ========== CHARGEMENT CONFIGURATION INITIALE ==========
 
-function saveToJSON() {
+async function loadConfig() {
+    try {
+        const res = await fetch('config.json');
+        const config = await res.json();
+        HA_URL = config.ha_url;
+        TOKEN = config.ha_token;
+        WEATHER_ENTITY = config.weather_entity;
+        ROOMS = config.rooms.map(r => ({
+            ...r,
+            jsonFile: r.jsonFile || `config_${r.n.toLowerCase()}.json`,
+            // Standardisation des noms de clés si nécessaire
+            vacuum: r.vacuum || r.vacuum_entity,
+            window: r.window || r.window_entity
+        }));
+        headers = { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" };
+        console.log("⚙️ Configuration chargée:", config);
+    } catch (e) {
+        console.error("❌ Erreur chargement config.json:", e);
+        alert("Erreur critique: config.json introuvable ou malformé.");
+    }
+}
+
+// ========== SAUVEGARDE / CHARGEMENT JSON SERVEUR ==========
+
+async function saveToJSON(silent = false) {
     const r = ROOMS[curR];
     const data = {
         room: r.n,
+        jsonFile: r.jsonFile,
         zones: zones,
         hotspots: hotspots
     };
 
-    // Sauvegarde dans localStorage
-    localStorage.setItem(r.jsonFile, JSON.stringify(data));
-
-    console.log(`✅ Sauvegardé dans ${r.jsonFile}:`, data);
-    alert(`✅ Sauvegardé!\n${zones.length} zones 2D\n${hotspots.length} hotspots 360°`);
-    toggleEdit();
+    try {
+        const res = await fetch('save_hotspots.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.status === 'success') {
+            console.log(`✅ Sauvegardé dans ${r.jsonFile}`);
+            if (!silent) {
+                alert(`✅ Sauvegardé sur le serveur!\n${zones.length} zones 2D\n${hotspots.length} hotspots 360°`);
+                toggleEdit();
+            }
+        } else {
+            throw new Error(result.message);
+        }
+    } catch (e) {
+        console.error("❌ Erreur sauvegarde:", e);
+        if (!silent) alert("Erreur lors de la sauvegarde sur le serveur.");
+    }
 }
 
-function loadFromJSON() {
+async function loadFromJSON() {
     const r = ROOMS[curR];
-    const saved = localStorage.getItem(r.jsonFile);
-
-    if(saved) {
-        const data = JSON.parse(saved);
+    try {
+        const res = await fetch(r.jsonFile + '?t=' + Date.now()); // Anti-cache
+        if (!res.ok) throw new Error("Fichier non trouvé");
+        const data = await res.json();
         zones = data.zones || [];
         hotspots = data.hotspots || [];
         console.log(`📂 Chargé depuis ${r.jsonFile}:`, data);
-    } else {
+    } catch (e) {
         zones = [];
         hotspots = [];
-        console.log(`📂 Aucune donnée pour ${r.jsonFile}`);
+        console.log(`📂 Aucune donnée ou erreur pour ${r.jsonFile}, utilisation vide.`);
     }
 }
 
@@ -1284,7 +1334,7 @@ async function switchRoom(idx, btn) {
         img.src = r.img;
 
         // Charger depuis JSON local
-        loadFromJSON();
+        await loadFromJSON();
 
         await updateStatus();
 
@@ -1496,6 +1546,7 @@ function confirmItem() {
 
     bModal.hide();
     is360Active ? initPannellum() : drawZones();
+    saveToJSON(true);
 }
 
 function deleteItem() {
@@ -1510,6 +1561,7 @@ function deleteItem() {
 
     bModal.hide();
     is360Active ? initPannellum() : drawZones();
+    saveToJSON(true);
 }
 
 async function handleAction(item) {
@@ -1518,7 +1570,10 @@ async function handleAction(item) {
     if(url.includes('.') && !url.includes('/')) {
         await callHA('homeassistant', 'toggle', { entity_id: url });
     } else {
-        window.open(url, '_blank');
+        if(!haModalInstance) haModalInstance = new bootstrap.Modal(document.getElementById('haModal'));
+        document.getElementById('haModalTitle').innerText = item.n || item.name || "Action";
+        document.getElementById('haFrame').src = url;
+        haModalInstance.show();
     }
 }
 
@@ -1534,8 +1589,13 @@ function toggleMobileMenu() {
 // ========== INIT ==========
 
 (async () => {
+    await loadConfig();
     initRoomSelector();
     await switchRoom(0);
+
+    document.getElementById('haModal').addEventListener('hidden.bs.modal', () => {
+        document.getElementById('haFrame').src = "";
+    });
 
     updateHeader();
     fetchWeather();
