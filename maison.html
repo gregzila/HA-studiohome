@@ -62,6 +62,13 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6),
                         0 0 100px rgba(120, 119, 198, 0.1);
             border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        #plan-img.transitioning {
+            opacity: 0;
+            filter: blur(15px);
+            transform: scale(0.95);
         }
 
         svg {
@@ -90,12 +97,13 @@
 
         /* Glassmorphism Cards */
         .glass-card {
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(20px) saturate(180%);
-            border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 20px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(25px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.4),
+                        inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .glass-card:hover {
@@ -104,10 +112,78 @@
             transform: translateY(-2px);
         }
 
+        /* Header */
+        .glass-header {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1100;
+            width: calc(100% - 300px);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 30px;
+        }
+
+        .header-left {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .welcome-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .date-text {
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .header-center {
+            text-align: center;
+        }
+
+        .clock-text {
+            font-size: 1.5rem;
+            font-weight: 800;
+            letter-spacing: 2px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .weather-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 8px 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .weather-icon {
+            font-size: 1.25rem;
+        }
+
+        .weather-temp {
+            font-weight: 600;
+        }
+
         /* Room Selector */
         .room-selector {
             position: fixed;
-            top: 30px;
+            top: 100px;
             left: 30px;
             z-index: 1000;
             max-width: 200px;
@@ -187,7 +263,7 @@
         /* Status Panel */
         #status-panel {
             position: fixed;
-            top: 30px;
+            top: 100px;
             right: 30px;
             z-index: 1000;
             min-width: 280px;
@@ -308,8 +384,14 @@
         }
 
         @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
+            0%, 100% {
+                transform: scale(1);
+                box-shadow: 0 4px 15px rgba(250, 112, 154, 0.3);
+            }
+            50% {
+                transform: scale(1.1);
+                box-shadow: 0 4px 25px rgba(250, 112, 154, 0.6);
+            }
         }
 
         .window-text {
@@ -575,6 +657,21 @@
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
         }
 
+        .custom-hotspot {
+            height: 25px;
+            width: 25px;
+            background: rgba(102, 126, 234, 0.7);
+            border: 2px solid white;
+            border-radius: 50%;
+            cursor: pointer;
+            box-shadow: 0 0 10px rgba(0,0,0,0.5);
+            transition: transform 0.3s ease;
+        }
+        .custom-hotspot:hover {
+            transform: scale(1.2);
+            background: rgba(102, 126, 234, 1);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .room-selector, #status-panel {
@@ -612,6 +709,23 @@
     </style>
 </head>
 <body>
+
+<!-- Header -->
+<div class="glass-header glass-card">
+    <div class="header-left">
+        <div id="greeting" class="welcome-text">Bonjour</div>
+        <div id="date-now" class="date-text">-- --- ----</div>
+    </div>
+    <div class="header-center">
+        <div id="clock" class="clock-text">00:00</div>
+    </div>
+    <div class="header-right">
+        <div class="weather-info">
+            <span id="weather-icon" class="weather-icon">☁️</span>
+            <span id="weather-temp" class="weather-temp">--°C</span>
+        </div>
+    </div>
+</div>
 
 <!-- Room Selector -->
 <div class="room-selector glass-card">
@@ -673,6 +787,24 @@
             <div class="eve-arrow">→</div>
         </div>
     </div>
+
+    <!-- 360 Card -->
+    <div class="glass-card eve-card" onclick="toggle360()">
+        <div class="eve-content">
+            <div class="eve-icon" style="background: linear-gradient(135deg, #11998e, #38ef7d);">👁️</div>
+            <div class="eve-text">
+                <div class="eve-label">Visualisation</div>
+                <div class="eve-title">Vue 360°</div>
+            </div>
+            <div class="eve-arrow">→</div>
+        </div>
+    </div>
+</div>
+
+<!-- 360 Viewer Container -->
+<div id="panorama-container" class="glass-card" style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 80vw; height: 60vh; z-index: 3000;">
+    <span onclick="toggle360()" style="position: absolute; top: 10px; right: 20px; font-size: 2rem; cursor: pointer; z-index: 3001; color: white;">&times;</span>
+    <div id="panorama" style="width: 100%; height: 100%; border-radius: 24px;"></div>
 </div>
 
 <!-- Thermostat Panel -->
@@ -742,18 +874,22 @@
 <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 
 <script>
+// CONFIGURATION HOME ASSISTANT
+// ATTENTION : Ces valeurs sont sensibles. Ne les partagez pas publiquement.
 const HA_URL = "https://qq5e0tspgj2a22alvsqitgptzj2sz0o4.ui.nabu.casa";
 const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyM2QwMGZhNDdhYzM0NTgzYmFlM2UzMGRiMWMwMzBjMyIsImlhdCI6MTc2OTQyNzk1MiwiZXhwIjoyMDg0Nzg3OTUyfQ.qCik3fu6D-CqVg6RVuoQjF4g8zbM2ZXtYu3LVxrGVEs";
 
+const WEATHER_ENTITY = "weather.izon"; // Entité météo
+
 const ROOMS = [
-    { n: "Cuisine", icon: "🍳", img: "Cuisine.jpg", store: "var.plan_cuisine_data", temp: "sensor.temperature_cuisine_2", climate: "climate.thermostat_cuisine", vacuum: "button.eve_shortcut_5", window: "binary_sensor.fenetre_cuisine_porte" },
-    { n: "Salon", icon: "🛋️", img: "Salon.jpg", store: "var.plan_salon_data", temp: "sensor.temp_salon", climate: "climate.thermostat_salon_2", vacuum: "button.eve_shortcut_6", window: "binary_sensor.fenetre_salon_porte" },
-    { n: "Elisa", icon: "🌸", img: "Elisa.jpg", store: "var.plan_chambre1_data", temp: "sensor.current_temperature_chambre_elisa", climate: "climate.thermostat_chambre_elisa_2", vacuum: "button.eve_shortcut_2", window: "binary_sensor.0xa4c138fea27bfbdf_contact" },
-    { n: "Justine", icon: "⭐", img: "Justine.jpg", store: "var.plan_chambre2_data", temp: "sensor.sensor_temp_justine", climate: "climate.thermostat_justine", vacuum: "button.eve_shortcut_3", window: "binary_sensor.0xa4c138462fd3310c_contact" },
-    { n: "Parents", icon: "👥", img: "Chambreparents.jpg", store: "var.plan_chambre3_data", temp: "sensor.current_temperature_chambre_parent", climate: "climate.thermostat_chambre_parents_2", vacuum: "button.eve_shortcut_1", window: "binary_sensor.0xa4c13815453e5c05_contact" }
+    { n: "Cuisine", icon: "🍳", img: "Cuisine.jpg", img360: "Cuisine__1.jpg", store: "var.plan_cuisine_data", store360: "var.plan_cuisine_360", temp: "sensor.temperature_cuisine_2", climate: "climate.thermostat_cuisine", vacuum: "button.eve_shortcut_5", window: "binary_sensor.fenetre_cuisine_porte" },
+    { n: "Salon", icon: "🛋️", img: "Salon.jpg", img360: "Salon.jpg", store: "var.plan_salon_data", store360: "var.plan_salon_360", temp: "sensor.temp_salon", climate: "climate.thermostat_salon_2", vacuum: "button.eve_shortcut_6", window: "binary_sensor.fenetre_salon_porte" },
+    { n: "Elisa", icon: "🌸", img: "Elisa.jpg", img360: "Elisa.jpg", store: "var.plan_chambre1_data", store360: "var.plan_chambre1_360", temp: "sensor.current_temperature_chambre_elisa", climate: "climate.thermostat_chambre_elisa_2", vacuum: "button.eve_shortcut_2", window: "binary_sensor.0xa4c138fea27bfbdf_contact" },
+    { n: "Justine", icon: "⭐", img: "Justine.jpg", img360: "Justine.jpg", store: "var.plan_chambre2_data", store360: "var.plan_chambre2_360", temp: "sensor.sensor_temp_justine", climate: "climate.thermostat_justine", vacuum: "button.eve_shortcut_3", window: "binary_sensor.0xa4c138462fd3310c_contact" },
+    { n: "Parents", icon: "👥", img: "Chambreparents.jpg", img360: "Chambreparents.jpg", store: "var.plan_chambre3_data", store360: "var.plan_chambre3_360", temp: "sensor.current_temperature_chambre_parent", climate: "climate.thermostat_chambre_parents_2", vacuum: "button.eve_shortcut_1", window: "binary_sensor.0xa4c13815453e5c05_contact" }
 ];
 
-let curR = 0, zones = [], currentPoints = [], editMode = false;
+let curR = 0, zones = [], hotspots = [], currentPoints = [], editMode = false;
 const headers = { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" };
 const bModal = new bootstrap.Modal(document.getElementById('configModal'));
 
@@ -784,12 +920,41 @@ function initRoomSelector() {
     document.getElementById('room-count').innerText = `${ROOMS.length} Pièces`;
 }
 
+function updateClock() {
+    const now = new Date();
+    document.getElementById('clock').innerText = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('date-now').innerText = now.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+    const hour = now.getHours();
+    let greeting = "Bonjour";
+    if (hour >= 18) greeting = "Bonsoir";
+    if (hour >= 23 || hour < 5) greeting = "Bonne nuit";
+    document.getElementById('greeting').innerText = greeting;
+}
+
+async function updateWeather() {
+    const state = await getEntityState(WEATHER_ENTITY);
+    if (state && state.attributes) {
+        document.getElementById('weather-temp').innerText = `${state.attributes.temperature}°C`;
+        const icons = { 'sunny': '☀️', 'cloudy': '☁️', 'partlycloudy': '⛅', 'rainy': '🌧️', 'clear-night': '🌙', 'pouring': '⛈️', 'snowy': '❄️' };
+        document.getElementById('weather-icon').innerText = icons[state.state] || '🌡️';
+    }
+}
+
 async function updateStatus() {
     const r = ROOMS[curR];
 
+    // Header
+    updateClock();
+    updateWeather();
+
     // Temperature
     const tState = await getEntityState(r.temp);
-    if(tState) document.getElementById('txt-temp').innerText = `${parseFloat(tState.state).toFixed(1)}°C`;
+    if(tState) {
+        const temp = parseFloat(tState.state);
+        document.getElementById('txt-temp').innerText = `${temp.toFixed(1)}°C`;
+        updateTempUI(temp);
+    }
 
     // Climate / Thermostat
     const cState = await getEntityState(r.climate);
@@ -815,6 +980,7 @@ async function updateStatus() {
 }
 
 async function switchRoom(idx, btn) {
+    if (curR === idx && btn) return;
     curR = idx;
     const r = ROOMS[curR];
     
@@ -823,18 +989,31 @@ async function switchRoom(idx, btn) {
     if(btn) btn.classList.add('active');
 
     const img = document.getElementById('plan-img');
-    img.style.opacity = '0';
+    img.classList.add('transitioning');
+
     setTimeout(async () => {
+        img.onload = () => {
+            img.classList.remove('transitioning');
+            syncSVG();
+        };
         img.src = r.img;
-        img.onload = () => { img.style.opacity = '1'; syncSVG(); };
 
         // Load Zones
         const sState = await getEntityState(r.store);
         zones = (sState && sState.state !== "unknown") ? JSON.parse(sState.state) : [];
 
+        // Load Hotspots 360
+        if(r.store360) {
+            const hState = await getEntityState(r.store360);
+            const raw360 = (hState && hState.state !== "unknown" && hState.state !== "") ? JSON.parse(hState.state) : [];
+            hotspots = raw360.map(hs => ({ n: hs.n || hs.name, pi: hs.pi || hs.pitch, y: hs.y || hs.yaw, u: hs.u || hs.url }));
+        } else {
+            hotspots = [];
+        }
+
         updateStatus();
         drawZones();
-    }, 150);
+    }, 300);
 
     // Reset thermo panel
     document.getElementById('thermo-panel').classList.remove('active');
@@ -865,6 +1044,19 @@ async function launchEve() {
     const r = ROOMS[curR];
     await callHA("button", "press", { entity_id: r.vacuum });
     alert(`🤖 EVE est en route pour le ${r.n} !`);
+}
+
+function updateTempUI(temp) {
+    const card = document.querySelector('.temp-card');
+    let gradient;
+    if (temp < 19) {
+        gradient = 'linear-gradient(135deg, rgba(79, 172, 254, 0.2) 0%, rgba(0, 242, 254, 0.2) 100%)';
+    } else if (temp > 23) {
+        gradient = 'linear-gradient(135deg, rgba(250, 112, 154, 0.2) 0%, rgba(254, 225, 64, 0.2) 100%)';
+    } else {
+        gradient = 'rgba(255, 255, 255, 0.08)';
+    }
+    card.style.background = gradient;
 }
 
 // Polygon logic
@@ -937,32 +1129,45 @@ function toggleEdit() {
     updateDrawLine();
 }
 
-function openConfig(idx) {
+function openConfig(idx, type = '2D') {
     document.getElementById('edit-idx').value = idx;
-    document.getElementById('zone-name').value = zones[idx].n;
-    document.getElementById('zone-url').value = zones[idx].u || zones[idx].url || "";
-    new bootstrap.Modal(document.getElementById('configModal')).show();
+    document.getElementById('edit-type').value = type;
+    const item = (type === '360') ? hotspots[idx] : zones[idx];
+    document.getElementById('zone-name').value = item.n;
+    document.getElementById('zone-url').value = item.u || item.url || "";
+    bModal.show();
 }
 
 function confirmItem() {
     const i = document.getElementById('edit-idx').value;
-    zones[i].n = document.getElementById('zone-name').value;
-    zones[i].u = document.getElementById('zone-url').value;
-    bootstrap.Modal.getInstance(document.getElementById('configModal')).hide();
-    drawZones();
+    const type = document.getElementById('edit-type').value;
+    const item = (type === '360') ? hotspots[i] : zones[i];
+    item.n = document.getElementById('zone-name').value;
+    item.u = document.getElementById('zone-url').value;
+    bModal.hide();
+    (type === '360') ? (toggle360(), toggle360()) : drawZones();
 }
 
 function deleteItem() {
     const i = document.getElementById('edit-idx').value;
-    zones.splice(i, 1);
-    bootstrap.Modal.getInstance(document.getElementById('configModal')).hide();
-    drawZones();
+    const type = document.getElementById('edit-type').value;
+    if(type === '360') hotspots.splice(i, 1);
+    else zones.splice(i, 1);
+    bModal.hide();
+    (type === '360') ? (toggle360(), toggle360()) : drawZones();
 }
 
 async function saveToHA() {
     const r = ROOMS[curR];
-    await callHA('var', 'set', { entity_id: r.store, value: JSON.stringify(zones) });
-    alert('Plan sauvegardé !');
+    const val2d = JSON.stringify(zones);
+    await callHA('var', 'set', { entity_id: r.store, value: val2d });
+
+    if(r.store360) {
+        const val360 = JSON.stringify(hotspots.map(h => ({ n: h.n, pi: Math.round(h.pi), y: Math.round(h.y), u: h.u })));
+        await callHA('var', 'set', { entity_id: r.store360, value: val360 });
+    }
+
+    alert('Configuration sauvegardée !');
     toggleEdit();
 }
 
@@ -982,6 +1187,55 @@ function closeModal() {
     document.getElementById('ha-modal').style.display='none';
     document.getElementById('modal-overlay').style.display='none';
     document.getElementById('ha-frame').src = '';
+}
+
+let viewer = null;
+function toggle360() {
+    const container = document.getElementById('panorama-container');
+    const overlay = document.getElementById('modal-overlay');
+    const isVisible = container.style.display !== 'none';
+
+    if (isVisible) {
+        container.style.display = 'none';
+        overlay.style.display = 'none';
+        if (viewer) {
+            viewer.destroy();
+            viewer = null;
+        }
+    } else {
+        const room = ROOMS[curR];
+        container.style.display = 'block';
+        overlay.style.display = 'block';
+
+        viewer = pannellum.viewer('panorama', {
+            "type": "equirectangular",
+            "panorama": room.img360 || room.img,
+            "autoLoad": true,
+            "hotSpots": hotspots.map(h => ({
+                pitch: parseFloat(h.pi),
+                yaw: parseFloat(h.y),
+                cssClass: 'custom-hotspot',
+                createTooltipFunc: (el) => {
+                    const tooltip = document.createElement('div');
+                    tooltip.style.cssText = "background: rgba(0,0,0,0.8); color: white; padding: 5px 10px; border-radius: 8px; font-size: 12px; white-space: nowrap;";
+                    tooltip.innerText = h.n;
+                    el.appendChild(tooltip);
+                },
+                clickHandlerFunc: () => handleAction(h)
+            }))
+        });
+
+        viewer.on('mousedown', (e) => {
+            if(!editMode) return;
+            const c = viewer.mouseEventToCoords(e);
+            if(c) {
+                hotspots.push({ n: "Nouveau Point", pi: Math.round(c[0]), y: Math.round(c[1]), u: "" });
+                toggle360(); // Refresh viewer
+                toggle360();
+                setTimeout(() => openConfig(hotspots.length - 1, '360'), 200);
+            }
+        });
+    }
 }
 
 // Init
