@@ -24,6 +24,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $configFile = 'config_' . strtolower($roomName) . '.json';
 
+    // Check if directory is writable
+    if (!is_writable('.')) {
+        $response['message'] = "Le serveur n'a pas les droits d'écriture dans le dossier courant (" . getcwd() . ").";
+        http_response_code(500);
+        echo json_encode($response);
+        exit;
+    }
+
+    // Check if file exists and is writable, or if it doesn't exist and dir is writable
+    if (file_exists($configFile) && !is_writable($configFile)) {
+        $response['message'] = "Le fichier de configuration $configFile n'est pas modifiable (droits d'écriture manquants).";
+        http_response_code(500);
+        echo json_encode($response);
+        exit;
+    }
+
     $hotspots = isset($input['hotspots']) ? $input['hotspots'] : null;
     $zones = isset($input['zones']) ? $input['zones'] : null;
 

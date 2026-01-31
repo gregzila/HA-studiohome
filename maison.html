@@ -229,11 +229,25 @@ async function saveToJSON(type = 'both') {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
         });
-        const result = await res.json();
+
+        const text = await res.text();
+        let result;
+        try {
+            result = JSON.parse(text);
+        } catch (e) {
+            // Si ce n'est pas du JSON, c'est probablement que le PHP n'est pas exécuté
+            // ou qu'il y a une erreur fatale PHP.
+            const errorMsg = text.includes('<?php')
+                ? "Le serveur ne semble pas supporter PHP ou ne l'exécute pas. Le fichier save_hotspots.php est renvoyé en tant que texte brut."
+                : "Le serveur a renvoyé une réponse non valide : " + text.substring(0, 100) + "...";
+            throw new Error(errorMsg);
+        }
+
         if (result.status !== 'success') {
-            console.error("Save failed:", result.message);
+            alert("Erreur lors de la sauvegarde : " + result.message);
         }
     } catch (e) {
+        alert("Erreur lors de la sauvegarde sur le serveur.\n\nDétails : " + e.message);
         console.error("Save error:", e);
     }
 }

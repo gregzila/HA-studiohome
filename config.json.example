@@ -1,0 +1,16 @@
+{
+    "ha_url": "https://YOUR_INSTANCE.ui.nabu.casa",
+    "ha_token": "YOUR_LONG_LIVED_ACCESS_TOKEN",
+    "weather_entity": "weather.your_weather",
+    "rooms": [
+        {
+            "n": "Salon",
+            "icon": "🛋️",
+            "img": "Salon.jpg",
+            "img360": "Salon_360.jpg",
+            "temp": "sensor.salon_temp",
+            "vacuum_entity": "vacuum.robot",
+            "window_entity": "binary_sensor.salon_window"
+        }
+    ]
+}
