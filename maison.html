@@ -41,7 +41,7 @@
 <body>
 
 <div id="side-menu">
-    <div id="weather-widget">...</div>
+    <div id="weather-widget">Chargement...</div>
     <div id="rooms-list"></div>
 </div>
 
@@ -56,12 +56,11 @@
 <div class="ui-controls">
     <button id="btn-toggle-360" class="btn btn-info btn-sm rounded-pill fw-bold px-3 shadow" onclick="toggle360View()">VUE 360°</button>
     <button id="btn-edit" class="btn btn-warning btn-sm rounded-pill" onclick="toggleEdit()">ÉDIT</button>
-    <button id="btn-save" class="btn btn-success btn-sm rounded-pill d-none" onclick="saveToHA()">SAUVER</button>
 </div>
 
 <div id="plan-wrapper">
     <div id="plan-container">
-        <img id="plan-img" src="maison.jpg" alt="Plan de la maison" ondragstart="return false;">
+        <img id="plan-img" src="" alt="Plan de la maison" ondragstart="return false;">
         <svg id="svg-overlay" onclick="handleMapClick(event)"></svg>
     </div>
     <div id="panorama"></div>
@@ -104,61 +103,68 @@
 <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 
 <script>
-const HA_URL = "https://qq5e0tspgj2a22alvsqitgptzj2sz0o4.ui.nabu.casa";
-const TOKEN = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyM2QwMGZhNDdhYzM0NTgzYmFlM2UzMGRiMWMwMzBjMyIsImlhdCI6MTc2OTQyNzk1MiwiZXhwIjoyMDg0Nzg3OTUyfQ.qCik3fu6D-CqVg6RVuoQjF4g8zbM2ZXtYu3LVxrGVEs";
-const WEATHER_ENTITY = "weather.izon";
-
-const ROOMS = [
-    { n: "Cuisine", img: "Cuisine.jpg", img360: "Cuisine__1.jpg", store: "var.plan_cuisine_data", store360: "var.plan_cuisine_360", temp: "sensor.temperature_cuisine_2", vacuum: "button.eve_shortcut_5", window: "binary_sensor.fenetre_cuisine_porte" },
-    { n: "Salon", img: "Salon.jpg", img360: null, store: "var.plan_salon_data", temp: "sensor.temp_salon", vacuum: "button.eve_shortcut_6", window: "binary_sensor.fenetre_salon_porte" },
-    { n: "Elisa", img: "Elisa.jpg", img360: null, store: "var.plan_chambre1_data", temp: "sensor.current_temperature_chambre_elisa", vacuum: "button.eve_shortcut_2", window: null },
-    { n: "Justine", img: "Justine.jpg", img360: null, store: "var.plan_chambre2_data", temp: "sensor.sensor_temp_justine", vacuum: "button.eve_shortcut_3", window: "binary_sensor.0xa4c138462fd3310c_contact" },
-    { n: "Parents", img: "Chambreparents.jpg", img360: null, store: "var.plan_chambre3_data", temp: "sensor.current_temperature_chambre_parent", vacuum: "button.eve_shortcut_1", window: null }
-];
-
+let HA_URL, TOKEN, WEATHER_ENTITY, ROOMS = [];
 let curR = 0, zones = [], hotspots = [], currentPoints = [], editMode = false, is360Active = false, panoViewer = null;
 const configModal = new bootstrap.Modal(document.getElementById('configModal'));
-const headers = { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" };
 const svgOverlay = document.getElementById('svg-overlay');
 const drawLine = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
 drawLine.setAttribute("id", "draw-line");
 svgOverlay.appendChild(drawLine);
 
+async function loadConfig() {
+    try {
+        const res = await fetch('config.json');
+        if (!res.ok) throw new Error("config.json not found");
+        const config = await res.json();
+        HA_URL = config.ha_url;
+        TOKEN = config.ha_token;
+        WEATHER_ENTITY = config.weather_entity;
+        ROOMS = config.rooms || [];
+        return true;
+    } catch (e) {
+        console.error("Failed to load global config:", e);
+        document.body.innerHTML = `<div style="padding:20px; color:red;">Erreur: Impossible de charger config.json. Vérifiez que le fichier existe et est accessible.</div>`;
+        return false;
+    }
+}
 
 async function callService(service, entity_id, data = {}) {
-    if(!entity_id) return;
+    if(!entity_id || !HA_URL) return;
     const [domain, action] = service.split('.');
     try {
         await fetch(`${HA_URL}/api/services/${domain}/${action}`, { 
             method: 'POST', 
-            headers, 
+            headers: { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" },
             body: JSON.stringify({ entity_id, ...data }) 
         });
     } catch(e) { console.error(`Failed to call service ${service} for ${entity_id}`, e); }
 }
 
 async function getEntityState(entity_id) {
-    if (!entity_id) return null;
+    if (!entity_id || !HA_URL) return null;
     try {
-        const res = await fetch(`${HA_URL}/api/states/${entity_id}`, { headers });
+        const res = await fetch(`${HA_URL}/api/states/${entity_id}`, {
+            headers: { "Authorization": `Bearer ${TOKEN}` }
+        });
         if (!res.ok) return null;
         return await res.json();
     } catch (e) { return null; }
 }
 
 function initMenu() {
+    if (!ROOMS.length) return;
     document.getElementById('rooms-list').innerHTML = ROOMS.map((r, i) => `
         <div class="room-item ${i === curR ? 'active' : ''}" onclick="switchRoom(${i}); document.getElementById('side-menu').classList.remove('open');">
             <span><i class="fas fa-door-closed me-2"></i>${r.n}</span>
             <div class="room-status-icons">
-                ${r.vacuum ? `<i class="fas fa-robot" onclick="event.stopPropagation(); callService('button.press', '${r.vacuum}');"></i>` : ''}
-                ${r.window ? `<i id="win-status-${i}" class="fas fa-question-circle"></i>` : ''}
+                ${r.vacuum_entity ? `<i class="fas fa-robot" onclick="event.stopPropagation(); callService('button.press', '${r.vacuum_entity}');"></i>` : ''}
+                ${r.window_entity ? `<i id="win-status-${i}" class="fas fa-question-circle"></i>` : ''}
             </div>
         </div>`).join('');
 }
 
 async function updateAllStatuses() {
-    // Weather
+    if (!WEATHER_ENTITY) return;
     const weatherState = await getEntityState(WEATHER_ENTITY);
     if (weatherState) {
         document.getElementById('weather-widget').innerHTML = `
@@ -167,11 +173,10 @@ async function updateAllStatuses() {
             <div>${weatherState.state || '--'}</div>`;
     }
 
-    // Room statuses
     for(let i=0; i < ROOMS.length; i++){
         const room = ROOMS[i];
-        if(room.window){
-            const windowState = await getEntityState(room.window);
+        if(room.window_entity){
+            const windowState = await getEntityState(room.window_entity);
             const icon = document.getElementById(`win-status-${i}`);
             if(windowState && icon){
                 icon.className = `fas ${windowState.state === 'on' ? 'fa-door-open text-warning' : 'fa-door-closed'}`;
@@ -181,6 +186,7 @@ async function updateAllStatuses() {
 }
 
 async function switchRoom(idx) {
+    if (!ROOMS[idx]) return;
     curR = idx; 
     const r = ROOMS[curR];
     document.getElementById('room-name').innerText = r.n;
@@ -189,14 +195,15 @@ async function switchRoom(idx) {
     initMenu();
     
     try {
-        const [s, h, t] = await Promise.all([
-            getEntityState(r.store),
-            getEntityState(r.store360),
+        const sanitizedRoom = r.n.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const configFileName = `config_${sanitizedRoom}.json`;
+        const [res, t] = await Promise.all([
+            fetch(configFileName).then(r => r.ok ? r.json() : {}).catch(() => ({})),
             getEntityState(r.temp)
         ]);
 
-        zones = (s && s.state !== "unknown") ? JSON.parse(s.state).map(z => ({ n: z.n, p: z.p, u: z.u })) : [];
-        hotspots = (h && h.state !== "unknown" && r.store360) ? JSON.parse(h.state).map(hs => ({ n: hs.n, pi: hs.pi, y: hs.y, u: hs.u })) : [];
+        zones = res.zones || [];
+        hotspots = res.hotspots || [];
         document.getElementById('temp-badge').innerText = t ? `${t.state || '--'}°C` : '--°C';
 
     } catch(e) {
@@ -210,17 +217,25 @@ async function switchRoom(idx) {
     syncSVG();
 }
 
-async function saveToHA() {
+async function saveToJSON(type = 'both') {
     const r = ROOMS[curR];
-    const cleanZones = zones.map(z => ({ n: z.n, p: z.p, u: z.u }));
-    const cleanHotspots = hotspots.map(h => ({ n: h.n, pi: Math.round(h.pi), y: Math.round(h.y), u: h.u }));
-    
-    await callService('var.set', r.store, { value: JSON.stringify(cleanZones) });
-    if (r.store360) {
-        await callService('var.set', r.store360, { value: JSON.stringify(cleanHotspots) });
+    const data = { room: r.n };
+    if (type === 'zones' || type === 'both') data.zones = zones;
+    if (type === 'hotspots' || type === 'both') data.hotspots = hotspots;
+
+    try {
+        const res = await fetch('save_hotspots.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        const result = await res.json();
+        if (result.status !== 'success') {
+            console.error("Save failed:", result.message);
+        }
+    } catch (e) {
+        console.error("Save error:", e);
     }
-    alert('Sauvegardé dans Home Assistant!');
-    toggleEdit();
 }
 
 function toggle360View() {
@@ -233,7 +248,7 @@ function toggle360View() {
 
 function syncSVG() { 
     const img = document.getElementById('plan-img'); 
-    if(!img.clientWidth) return; 
+    if(!img || !img.clientWidth) return;
     svgOverlay.setAttribute("viewBox", `0 0 ${img.clientWidth} ${img.clientHeight}`); 
     svgOverlay.style.width = img.clientWidth + "px"; 
     svgOverlay.style.height = img.clientHeight + "px"; 
@@ -252,6 +267,7 @@ function handleMapClick(e) {
 
 function updateDrawLine() { 
     const img = document.getElementById('plan-img'); 
+    if (!img) return;
     const rect = img.getBoundingClientRect(); 
     const pts = currentPoints.map(p => { const [px, py] = p.split(','); return `${(px * rect.width) / 100},${(py * rect.height) / 100}`; }).join(' '); 
     drawLine.setAttribute("points", pts); 
@@ -268,7 +284,6 @@ window.onkeydown = (e) => {
 };
 
 function drawZones() { 
-    // Clear all polygons except the drawing line
     while (svgOverlay.childNodes.length > 1) {
         svgOverlay.removeChild(svgOverlay.lastChild);
     }
@@ -289,6 +304,7 @@ function drawZones() {
 
 function initPannellum() { 
     if(panoViewer) panoViewer.destroy(); 
+    if (!ROOMS[curR].img360) return;
     panoViewer = pannellum.viewer('panorama', { 
         "type": "equirectangular", 
         "panorama": ROOMS[curR].img360, 
@@ -315,7 +331,6 @@ function initPannellum() {
 function toggleEdit() { 
     editMode = !editMode; 
     document.getElementById('btn-edit').innerText = editMode ? "FINIR" : "ÉDIT"; 
-    document.getElementById('btn-save').classList.toggle('d-none', !editMode); 
     svgOverlay.classList.toggle('edit-active', editMode); 
     currentPoints = []; 
     updateDrawLine(); 
@@ -338,17 +353,20 @@ function confirmItem() {
     item.u = document.getElementById('zone-url').value; 
     configModal.hide(); 
     if (is360Active) initPannellum(); else drawZones(); 
+    saveToJSON(type === '360' ? 'hotspots' : 'zones');
 }
 
 function deleteItem() { 
     const i = document.getElementById('edit-idx').value; 
-    if(document.getElementById('edit-type').value === '360') { 
+    const type = document.getElementById('edit-type').value;
+    if(type === '360') {
         hotspots.splice(i, 1); 
     } else { 
         zones.splice(i, 1); 
     } 
     configModal.hide(); 
     if (is360Active) initPannellum(); else drawZones(); 
+    saveToJSON(type === '360' ? 'hotspots' : 'zones');
 }
 
 async function handleAction(item) { 
@@ -369,15 +387,16 @@ function closeModal() {
     document.getElementById('ha-frame').src = 'about:blank';
 }
 
-// Initialisation
 (async () => {
-    await switchRoom(0);
-    updateAllStatuses();
-    setInterval(updateAllStatuses, 30000); 
+    const ok = await loadConfig();
+    if (ok && ROOMS.length > 0) {
+        await switchRoom(0);
+        updateAllStatuses();
+        setInterval(updateAllStatuses, 30000);
+    }
     window.onresize = syncSVG;
     document.getElementById('plan-img').onload = syncSVG;
 })();
-
 </script>
 </body>
 </html>
