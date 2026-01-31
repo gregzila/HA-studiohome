@@ -4,10 +4,18 @@ header('Content-Type: application/json');
 $response = ['status' => 'error', 'message' => 'An unknown error occurred.'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $input = json_decode(file_get_contents('php://input'), true);
+    $rawData = file_get_contents('php://input');
+    $input = json_decode($rawData, true);
+
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        $response['message'] = 'Erreur lors du décodage du JSON envoyé : ' . json_last_error_msg();
+        http_response_code(400);
+        echo json_encode($response);
+        exit;
+    }
 
     if (!isset($input['room'])) {
-        $response['message'] = 'Invalid input: room missing.';
+        $response['message'] = 'Donnée "room" manquante dans la requête.';
         http_response_code(400);
         echo json_encode($response);
         exit;
@@ -26,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Check if directory is writable
     if (!is_writable('.')) {
-        $response['message'] = "Le serveur n'a pas les droits d'écriture dans le dossier courant (" . getcwd() . ").";
+        $response['message'] = "Le serveur PHP n'a pas les droits d'écriture dans le dossier courant (" . getcwd() . "). Assurez-vous que l'utilisateur du serveur web (ex: www-data) a les permissions d'écriture.";
         http_response_code(500);
         echo json_encode($response);
         exit;
@@ -34,7 +42,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Check if file exists and is writable, or if it doesn't exist and dir is writable
     if (file_exists($configFile) && !is_writable($configFile)) {
-        $response['message'] = "Le fichier de configuration $configFile n'est pas modifiable (droits d'écriture manquants).";
+        $response['message'] = "Le fichier de configuration $configFile existe mais n'est pas modifiable (droits d'écriture manquants).";
         http_response_code(500);
         echo json_encode($response);
         exit;

@@ -1,0 +1,31 @@
+[Sat Jan 31 21:00:27 2026] PHP 8.3.6 Development Server (http://localhost:3000) started
+[Sat Jan 31 21:00:29 2026] [::1]:35310 Accepted
+[Sat Jan 31 21:00:29 2026] [::1]:35310 [200]: HEAD /maison.html
+[Sat Jan 31 21:00:29 2026] [::1]:35310 Closing
+[Sat Jan 31 21:00:52 2026] [::1]:46768 Accepted
+[Sat Jan 31 21:00:52 2026] [::1]:46768 [200]: GET /maison.html
+[Sat Jan 31 21:00:52 2026] [::1]:46768 Closing
+[Sat Jan 31 21:00:52 2026] [::1]:46776 Accepted
+[Sat Jan 31 21:00:52 2026] [::1]:46776 [200]: GET /config.json
+[Sat Jan 31 21:00:52 2026] [::1]:46776 Closing
+[Sat Jan 31 21:00:52 2026] [::1]:46790 Accepted
+[Sat Jan 31 21:00:52 2026] [::1]:46790 [404]: GET /config_cuisine.json - No such file or directory
+[Sat Jan 31 21:00:52 2026] [::1]:46790 Closing
+[Sat Jan 31 21:00:52 2026] [::1]:46800 Accepted
+[Sat Jan 31 21:00:52 2026] [::1]:46800 [200]: GET /Cuisine.jpg
+[Sat Jan 31 21:00:52 2026] [::1]:46800 Closing
+[Sat Jan 31 21:01:47 2026] [::1]:53552 Accepted
+[Sat Jan 31 21:01:47 2026] [::1]:53552 [200]: GET /maison.html
+[Sat Jan 31 21:01:47 2026] [::1]:53552 Closing
+[Sat Jan 31 21:01:48 2026] [::1]:53554 Accepted
+[Sat Jan 31 21:01:48 2026] [::1]:53554 [200]: GET /config.json
+[Sat Jan 31 21:01:48 2026] [::1]:53554 Closing
+[Sat Jan 31 21:01:48 2026] [::1]:53556 Accepted
+[Sat Jan 31 21:01:48 2026] [::1]:53566 Accepted
+[Sat Jan 31 21:01:48 2026] [::1]:53556 [404]: GET /config_cuisine.json - No such file or directory
+[Sat Jan 31 21:01:48 2026] [::1]:53556 Closing
+[Sat Jan 31 21:01:48 2026] [::1]:53566 [200]: GET /Cuisine.jpg
+[Sat Jan 31 21:01:48 2026] [::1]:53566 Closing
+[Sat Jan 31 21:02:16 2026] [::1]:55558 Accepted
+[Sat Jan 31 21:02:16 2026] [::1]:55558 [200]: POST /save_hotspots.php
+[Sat Jan 31 21:02:16 2026] [::1]:55558 Closing

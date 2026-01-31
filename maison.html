@@ -231,23 +231,33 @@ async function saveToJSON(type = 'both') {
         });
 
         const text = await res.text();
+
+        if (!res.ok) {
+            let errorDetail = text;
+            try {
+                const errJson = JSON.parse(text);
+                errorDetail = errJson.message || text;
+            } catch(e) {}
+            throw new Error(`Erreur HTTP ${res.status} : ${errorDetail}`);
+        }
+
         let result;
         try {
             result = JSON.parse(text);
         } catch (e) {
-            // Si ce n'est pas du JSON, c'est probablement que le PHP n'est pas exécuté
-            // ou qu'il y a une erreur fatale PHP.
             const errorMsg = text.includes('<?php')
-                ? "Le serveur ne semble pas supporter PHP ou ne l'exécute pas. Le fichier save_hotspots.php est renvoyé en tant que texte brut."
-                : "Le serveur a renvoyé une réponse non valide : " + text.substring(0, 100) + "...";
+                ? "Le serveur ne semble pas supporter PHP ou ne l'exécute pas. Le fichier save_hotspots.php est renvoyé en tant que texte brut.\n\nNote: Si vous utilisez Home Assistant, le serveur intégré ne supporte pas PHP dans le dossier /local/."
+                : "Le serveur a renvoyé une réponse non JSON : " + text.substring(0, 150) + "...";
             throw new Error(errorMsg);
         }
 
         if (result.status !== 'success') {
             alert("Erreur lors de la sauvegarde : " + result.message);
+        } else {
+            console.log("Sauvegarde réussie:", result.message);
         }
     } catch (e) {
-        alert("Erreur lors de la sauvegarde sur le serveur.\n\nDétails : " + e.message);
+        alert("🚨 ÉCHEC DE SAUVEGARDE\n\n" + e.message);
         console.error("Save error:", e);
     }
 }
