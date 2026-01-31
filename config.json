@@ -10,7 +10,9 @@
             "img360": "Cuisine__1.jpg",
             "temp": "sensor.temperature_cuisine_2",
             "vacuum_entity": "button.eve_shortcut_5",
-            "window_entity": "binary_sensor.fenetre_cuisine_porte"
+            "window_entity": "binary_sensor.fenetre_cuisine_porte",
+            "var_2d": "var.plan_cuisine_data",
+            "var_360": "var.plan_cuisine_360"
         },
         {
             "n": "Salon",
@@ -19,7 +21,8 @@
             "img360": "",
             "temp": "sensor.temp_salon",
             "vacuum_entity": "button.eve_shortcut_6",
-            "window_entity": "binary_sensor.fenetre_salon_porte"
+            "window_entity": "binary_sensor.fenetre_salon_porte",
+            "var_2d": "var.plan_salon_data"
         },
         {
             "n": "Elisa",
@@ -28,7 +31,8 @@
             "img360": "",
             "temp": "sensor.current_temperature_chambre_elisa",
             "vacuum_entity": "button.eve_shortcut_2",
-            "window_entity": ""
+            "window_entity": "",
+            "var_2d": "var.plan_elisa_data"
         },
         {
             "n": "Justine",
@@ -37,7 +41,8 @@
             "img360": "",
             "temp": "sensor.sensor_temp_justine",
             "vacuum_entity": "button.eve_shortcut_3",
-            "window_entity": "binary_sensor.0xa4c138462fd3310c_contact"
+            "window_entity": "binary_sensor.0xa4c138462fd3310c_contact",
+            "var_2d": "var.plan_justine_data"
         },
         {
             "n": "Parents",
@@ -46,7 +51,8 @@
             "img360": "",
             "temp": "sensor.current_temperature_chambre_parent",
             "vacuum_entity": "button.eve_shortcut_1",
-            "window_entity": ""
+            "window_entity": "",
+            "var_2d": "var.plan_parents_data"
         }
     ]
 }

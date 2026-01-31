@@ -195,15 +195,24 @@ async function switchRoom(idx) {
     initMenu();
     
     try {
-        const sanitizedRoom = r.n.toLowerCase().replace(/[^a-z0-9]/g, '');
-        const configFileName = `config_${sanitizedRoom}.json`;
-        const [res, t] = await Promise.all([
-            fetch(configFileName).then(r => r.ok ? r.json() : {}).catch(() => ({})),
+        const [res2d, res360, t] = await Promise.all([
+            r.var_2d ? getEntityState(r.var_2d) : Promise.resolve(null),
+            r.var_360 ? getEntityState(r.var_360) : Promise.resolve(null),
             getEntityState(r.temp)
         ]);
 
-        zones = res.zones || [];
-        hotspots = res.hotspots || [];
+        // Priorité à l'attribut 'data' pour contourner la limite de 255 caractères de l'état HA
+        const zonesStr = res2d?.attributes?.data || res2d?.state;
+        const hotspotsStr = res360?.attributes?.data || res360?.state;
+
+        try {
+            zones = (zonesStr && zonesStr !== 'unknown' && zonesStr !== 'unavailable') ? JSON.parse(zonesStr) : [];
+        } catch(e) { zones = []; console.warn("Format zones invalide", e); }
+
+        try {
+            hotspots = (hotspotsStr && hotspotsStr !== 'unknown' && hotspotsStr !== 'unavailable') ? JSON.parse(hotspotsStr) : [];
+        } catch(e) { hotspots = []; console.warn("Format hotspots invalide", e); }
+
         document.getElementById('temp-badge').innerText = t ? `${t.state || '--'}°C` : '--°C';
 
     } catch(e) {
@@ -219,45 +228,25 @@ async function switchRoom(idx) {
 
 async function saveToJSON(type = 'both') {
     const r = ROOMS[curR];
-    const data = { room: r.n };
-    if (type === 'zones' || type === 'both') data.zones = zones;
-    if (type === 'hotspots' || type === 'both') data.hotspots = hotspots;
 
     try {
-        const res = await fetch('save_hotspots.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
-
-        const text = await res.text();
-
-        if (!res.ok) {
-            let errorDetail = text;
-            try {
-                const errJson = JSON.parse(text);
-                errorDetail = errJson.message || text;
-            } catch(e) {}
-            throw new Error(`Erreur HTTP ${res.status} : ${errorDetail}`);
+        if ((type === 'zones' || type === 'both') && r.var_2d) {
+            await callService('var.set', r.var_2d, {
+                value: "Mis à jour le " + new Date().toLocaleString(),
+                attributes: { data: JSON.stringify(zones) }
+            });
         }
 
-        let result;
-        try {
-            result = JSON.parse(text);
-        } catch (e) {
-            const errorMsg = text.includes('<?php')
-                ? "Le serveur ne semble pas supporter PHP ou ne l'exécute pas. Le fichier save_hotspots.php est renvoyé en tant que texte brut.\n\nNote: Si vous utilisez Home Assistant, le serveur intégré ne supporte pas PHP dans le dossier /local/."
-                : "Le serveur a renvoyé une réponse non JSON : " + text.substring(0, 150) + "...";
-            throw new Error(errorMsg);
+        if ((type === 'hotspots' || type === 'both') && r.var_360) {
+            await callService('var.set', r.var_360, {
+                value: "Mis à jour le " + new Date().toLocaleString(),
+                attributes: { data: JSON.stringify(hotspots) }
+            });
         }
 
-        if (result.status !== 'success') {
-            alert("Erreur lors de la sauvegarde : " + result.message);
-        } else {
-            console.log("Sauvegarde réussie:", result.message);
-        }
+        console.log("Sauvegarde Home Assistant réussie");
     } catch (e) {
-        alert("🚨 ÉCHEC DE SAUVEGARDE\n\n" + e.message);
+        alert("🚨 ÉCHEC DE SAUVEGARDE SUR HOME ASSISTANT\n\n" + e.message + "\n\nVérifiez que l'intégration 'var' est installée et que les entités existent.");
         console.error("Save error:", e);
     }
 }
