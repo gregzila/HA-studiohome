@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Studio Domotique 360 PRO - VAR</title>
+    <title>Studio Domotique 360 PRO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -35,13 +35,8 @@
         }
 
         #plan-wrapper {
-            position: relative;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            width: 100vw;
-            padding: 20px;
+            position: relative; display: flex; justify-content: center; align-items: center;
+            height: 100vh; width: 100vw; padding: 120px 320px 120px 260px;
         }
 
         #plan-container {
@@ -56,20 +51,11 @@
         }
 
         #plan-img {
-            max-height: 85vh;
-            max-width: 90vw;
-            border-radius: 24px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6),
-                        0 0 100px rgba(120, 119, 198, 0.1);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 100%; max-width: 100%; width: auto; height: auto; object-fit: contain;
+            border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 100px rgba(120, 119, 198, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
-
-        #plan-img.transitioning {
-            opacity: 0;
-            filter: blur(15px);
-            transform: scale(0.95);
-        }
+        #plan-img.fading { opacity: 0; transform: scale(0.92) translateY(20px); filter: blur(15px); }
 
         svg {
             position: absolute;
@@ -832,7 +818,7 @@
 <!-- Edit Controls -->
 <div class="edit-controls">
     <button id="btn-edit" class="btn-edit primary" onclick="toggleEdit()">Modifier Plan</button>
-    <button id="btn-save" class="btn-edit success" style="display: none;" onclick="saveToHA()">Sauvegarder</button>
+    <button id="btn-save" class="btn-edit success" style="display: none;" onclick="saveToJSON()">Sauvegarder</button>
 </div>
 
 <!-- HA Modal (Legacy support for external URLs) -->
@@ -995,6 +981,29 @@ async function updateStatus() {
     }
 }
 
+async function loadFromJSON() {
+    const r = ROOMS[curR];
+    const timestamp = Date.now();
+    console.log(`📂 Chargement JSON pour ${r.n}...`);
+
+    try {
+        if (r.config_2d) {
+            const res = await fetch(`${r.config_2d}?t=${timestamp}`);
+            if (res.ok) zones = await res.json();
+            else console.warn(`   Fichier ${r.config_2d} non trouvé (normal si vide)`);
+        }
+        if (r.config_360) {
+            const res = await fetch(`${r.config_360}?t=${timestamp}`);
+            if (res.ok) hotspots = await res.json();
+            else console.warn(`   Fichier ${r.config_360} non trouvé (normal si vide)`);
+        }
+    } catch(e) {
+        console.error("❌ Erreur chargement JSON locaux:", e);
+        zones = [];
+        hotspots = [];
+    }
+}
+
 async function switchRoom(idx, btn) {
     if (curR === idx && btn) return;
     curR = idx;
@@ -1005,33 +1014,24 @@ async function switchRoom(idx, btn) {
     if(btn) btn.classList.add('active');
 
     const img = document.getElementById('plan-img');
-    img.classList.add('transitioning');
+    img.classList.add('fading');
 
     setTimeout(async () => {
+        img.src = r.img;
+        await loadFromJSON();
+        await updateStatus();
+        drawZones();
+
         img.onload = () => {
-            img.classList.remove('transitioning');
+            img.classList.remove('fading');
             syncSVG();
         };
-        img.src = r.img;
-
-        // Load Zones
-        const sState = await getEntityState(r.store);
-        let rawZones = (sState && sState.attributes && sState.attributes.data) ? sState.attributes.data : (sState ? sState.state : null);
-        zones = (rawZones && rawZones !== "unknown" && rawZones !== "") ? JSON.parse(rawZones) : [];
-
-        // Load Hotspots 360
-        if(r.store360) {
-            const hState = await getEntityState(r.store360);
-            let raw360 = (hState && hState.attributes && hState.attributes.data) ? hState.attributes.data : (hState ? hState.state : null);
-            const parsed360 = (raw360 && raw360 !== "unknown" && raw360 !== "") ? JSON.parse(raw360) : [];
-            hotspots = parsed360.map(hs => ({ n: hs.n || hs.name, pi: hs.pi ?? hs.pitch ?? 0, y: hs.y ?? hs.yaw ?? 0, u: hs.u || hs.url }));
-        } else {
-            hotspots = [];
+        // Au cas où l'image est déjà en cache
+        if (img.complete) {
+            img.classList.remove('fading');
+            syncSVG();
         }
-
-        updateStatus();
-        drawZones();
-    }, 300);
+    }, 400);
 
     // Reset thermo panel
     document.getElementById('thermo-panel').classList.remove('active');
@@ -1175,52 +1175,50 @@ function deleteItem() {
     (type === '360') ? (toggle360(), toggle360()) : drawZones();
 }
 
-async function saveToHA() {
+async function saveToJSON(silent = false) {
     const r = ROOMS[curR];
+    console.log(`💾 Sauvegarde locale (${r.n})...`);
 
-    // 1. SAUVEGARDE LOCALE (PHP) - Optionnel mais recommandé si PHP est disponible
     try {
+        const results = [];
+
+        // 1. Sauvegarde zones 2D
         if (r.config_2d) {
-            await fetch('save_hotspots.php', {
+            const res = await fetch('save_hotspots.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ file: r.config_2d, content: zones })
             });
+            const data = await res.json();
+            results.push(data);
         }
 
-        if (r.store360 && r.config_360) {
-            await fetch('save_hotspots.php', {
+        // 2. Sauvegarde hotspots 360
+        if (r.config_360) {
+            const res = await fetch('save_hotspots.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ file: r.config_360, content: hotspots })
             });
+            const data = await res.json();
+            results.push(data);
         }
-    } catch (e) { console.warn("Erreur save locale:", e); }
 
-    // 2. SAUVEGARDE HOME ASSISTANT (ATTRIBUTES pour éviter limite 255 caractères)
-    const val2d = JSON.stringify(zones);
-    await callHA('var', 'set', {
-        entity_id: r.store,
-        value: "Mis à jour le " + new Date().toLocaleString(),
-        attributes: { data: val2d }
-    });
+        // Vérification des erreurs retournées par PHP
+        const errors = results.filter(r => r.error).map(r => r.error);
+        if (errors.length > 0) {
+            throw new Error(errors.join(" | "));
+        }
 
-    if(r.store360) {
-        const val360 = JSON.stringify(hotspots.map(h => ({
-            n: h.n,
-            pi: Math.round(h.pi ?? h.pitch ?? 0),
-            y: Math.round(h.y ?? h.yaw ?? 0),
-            u: h.u
-        })));
-        await callHA('var', 'set', {
-            entity_id: r.store360,
-            value: "Mis à jour le " + new Date().toLocaleString(),
-            attributes: { data: val360 }
-        });
+        console.log("✅ Sauvegarde réussie.");
+        if (!silent) {
+            alert('✅ Configuration sauvegardée avec succès sur le serveur !');
+            toggleEdit();
+        }
+    } catch (e) {
+        console.error("❌ Erreur sauvegarde:", e);
+        alert("🚨 ÉCHEC DE SAUVEGARDE SUR LE SERVEUR\n\n" + e.message);
     }
-
-    alert('Configuration sauvegardée !');
-    toggleEdit();
 }
 
 async function handleAction(item) {
