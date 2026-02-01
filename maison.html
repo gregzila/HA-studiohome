@@ -2,398 +2,587 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Studio Domotique 360 PRO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css"/>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
-        :root {
-            --primary: #6c5ce7;
-            --secondary: #a29bfe;
-            --glass: rgba(255, 255, 255, 0.08);
-            --glass-hover: rgba(255, 255, 255, 0.15);
-            --glass-border: rgba(255, 255, 255, 0.2);
-            --text-main: #ffffff;
-            --text-dim: rgba(255, 255, 255, 0.6);
-        }
-
         * { margin: 0; padding: 0; box-sizing: border-box; }
-
+        html, body { height: 100vh; width: 100vw; margin: 0; padding: 0; }
         body {
-            background: radial-gradient(circle at top right, #1e1b4b, #0f172a);
-            font-family: 'Inter', -apple-system, sans-serif;
-            color: var(--text-main);
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            font-family: 'Inter', sans-serif;
+            color: white;
             overflow: hidden;
-            height: 100vh;
-        }
-
-        /* Glassmorphism Base */
-        .glass-card {
-            background: var(--glass);
-            backdrop-filter: blur(25px) saturate(160%);
-            -webkit-backdrop-filter: blur(25px) saturate(160%);
-            border: 1px solid var(--glass-border);
-            border-radius: 24px;
-            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-            transition: all 0.3s ease;
-        }
-
-        /* Layout Containers */
-        #main-view {
-            position: relative;
-            width: 100vw;
-            height: 100vh;
-            display: flex;
-            padding: 110px 320px 100px 280px;
-            z-index: 1;
-        }
-
-        #panorama-container {
-            width: 100%;
-            height: 100%;
-            border-radius: 35px;
-            overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            border: 1px solid var(--glass-border);
             position: relative;
         }
-
-        #panorama { width: 100%; height: 100%; }
-
-        /* Header */
-        .header-bar {
-            position: fixed;
-            top: 25px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 60px);
-            z-index: 1000;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 35px;
-        }
-
-        .header-section { display: flex; align-items: center; gap: 20px; }
-        .clock-text { font-size: 1.5rem; font-weight: 800; letter-spacing: 1px; }
-        .greeting-text { font-size: 1.1rem; font-weight: 600; background: linear-gradient(to right, #fff, #a29bfe); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-
-        .weather-widget {
-            background: rgba(255,255,255,0.05);
-            padding: 8px 18px;
-            border-radius: 50px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            border: 1px solid var(--glass-border);
-        }
-
-        /* Sidebars */
-        .sidebar-left {
-            position: fixed;
-            top: 110px;
-            left: 30px;
-            width: 220px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-        }
-
-        .sidebar-right {
-            position: fixed;
-            top: 110px;
-            right: 30px;
-            width: 280px;
-            z-index: 1000;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        /* Room Buttons */
-        .btn-room {
-            background: var(--glass);
-            border: 1px solid var(--glass-border);
-            color: var(--text-dim);
-            padding: 14px 20px;
-            border-radius: 18px;
-            text-align: left;
-            font-weight: 500;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .btn-room:hover {
-            background: var(--glass-hover);
-            transform: translateX(8px);
-            color: white;
-        }
-
-        .btn-room.active {
-            background: var(--primary);
-            border-color: var(--secondary);
-            color: white;
-            box-shadow: 0 0 20px rgba(108, 92, 231, 0.4);
-        }
-
-        /* Status Cards */
-        .status-card { padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-        .status-header { display: flex; justify-content: space-between; align-items: center; color: var(--text-dim); font-size: 0.8rem; text-transform: uppercase; letter-spacing: 1px; }
-        .status-value { font-size: 1.8rem; font-weight: 700; color: white; }
-
-        .status-footer {
-            background: rgba(255,255,255,0.05);
-            padding: 10px 15px;
-            border-radius: 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .status-footer:hover { background: rgba(255,255,255,0.1); }
-
-        /* Bottom Controls */
-        .bottom-controls {
-            position: fixed;
-            bottom: 35px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 2000;
-            display: flex;
-            gap: 15px;
-            padding: 10px 25px;
-            border-radius: 50px;
-        }
-
-        .btn-action {
-            padding: 12px 28px;
-            border-radius: 50px;
-            border: none;
-            font-weight: 700;
-            color: white;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-edit { background: #4b5563; }
-        .btn-edit.active { background: #ef4444; }
-        .btn-save { background: #10b981; box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3); }
-
-        .btn-action:hover { transform: translateY(-2px); filter: brightness(1.1); }
-        .btn-action:active { transform: translateY(0); }
-
-        /* Custom Pannellum Hotspot */
-        .custom-hotspot {
-            height: 32px;
-            width: 32px;
-            background: var(--primary);
-            border: 3px solid white;
-            border-radius: 50%;
-            cursor: pointer;
-            box-shadow: 0 0 15px rgba(108, 92, 231, 0.6);
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .custom-hotspot:hover { transform: scale(1.3); background: var(--secondary); }
-
-        .custom-hotspot::after {
+        body::before {
             content: '';
-            position: absolute;
-            width: 100%; height: 100%;
-            border-radius: 50%;
-            border: 2px solid white;
-            animation: pulse-ring 2s infinite;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 80%, rgba(255, 119, 198, 0.08) 0%, transparent 50%);
+            animation: gradientShift 15s ease infinite;
+            pointer-events: none;
         }
-
-        @keyframes pulse-ring {
-            0% { transform: scale(1); opacity: 0.8; }
-            100% { transform: scale(1.8); opacity: 0; }
+        @keyframes gradientShift {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.8; transform: scale(1.1); }
         }
-
-        /* Thermostat Popup */
-        #thermo-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.6); backdrop-filter: blur(5px);
-            z-index: 3000; display: none; align-items: center; justify-content: center;
+        #plan-wrapper {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            overflow: hidden;
         }
-        .thermo-panel { width: 320px; padding: 30px; text-align: center; }
-        .thermo-val { font-size: 4rem; font-weight: 800; margin: 20px 0; color: var(--primary); }
-        .thermo-btn { width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 1.5rem; cursor: pointer; background: var(--glass-hover); color: white; }
-
-        /* Modal Overlays */
-        #modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.8); z-index: 4000; display: none;
+        #plan-container {
+            position: absolute; top: 120px; left: 300px; right: 350px; bottom: 100px;
+            display: flex; justify-content: center; align-items: center;
+            animation: fadeInScale 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
         }
-        #ha-modal {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            width: 90%; height: 85%; z-index: 4001; display: none;
-            border-radius: 24px; overflow: hidden;
+        @keyframes fadeInScale {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
         }
-
-        /* Utility */
-        .loading-blur { filter: blur(10px); pointer-events: none; }
+        #plan-img {
+            max-height: 100%; max-width: 100%; width: auto; height: auto; object-fit: contain;
+            border-radius: 24px; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6), 0 0 100px rgba(120, 119, 198, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1); transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #plan-img.fading { opacity: 0; transform: scale(0.92) translateY(20px); filter: blur(15px); }
+        #panorama {
+            width: 100% !important; height: 100% !important; border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6); border: 1px solid rgba(255, 255, 255, 0.1);
+            display: none; position: absolute; top: 0; left: 0;
+            background: #000;
+        }
+        #panorama.active { display: block; }
+        #plan-img.hidden { visibility: hidden; }
+        svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 10; border-radius: 24px; }
+        .zone-poly { fill: #7877c6; fill-opacity: 0; cursor: pointer; pointer-events: all; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .zone-poly:hover { fill-opacity: 0.2; stroke: rgba(255, 255, 255, 0.6); stroke-width: 2; filter: drop-shadow(0 0 20px rgba(120, 119, 198, 0.5)); }
+        .custom-hotspot {
+            height: 30px; width: 30px; background: rgba(102, 126, 234, 0.8); border: 3px solid white;
+            border-radius: 50%; cursor: pointer; box-shadow: 0 0 20px rgba(102, 126, 234, 0.6);
+        }
+        .custom-hotspot::after {
+            content: ''; position: absolute; top: -3px; left: -3px; right: -3px; bottom: -3px;
+            border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.5);
+            animation: pulse-hotspot 2s ease-in-out infinite; pointer-events: none;
+        }
+        @keyframes pulse-hotspot {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.5); opacity: 0; }
+        }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.08); backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.15); border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); transition: all 0.3s ease;
+        }
+        .glass-card:hover { background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.25); transform: translateY(-2px); }
+        .glass-header {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1100;
+            width: calc(100% - 600px); display: flex; justify-content: space-between; align-items: center; padding: 15px 30px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .header-left { display: flex; flex-direction: column; }
+        .welcome-text {
+            font-size: 1.25rem; font-weight: 700;
+            background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .date-text { font-size: 0.75rem; color: rgba(255, 255, 255, 0.5); text-transform: uppercase; letter-spacing: 1px; }
+        .header-center { text-align: center; }
+        .clock-text { font-size: 1.5rem; font-weight: 800; letter-spacing: 2px; }
+        .header-right { display: flex; align-items: center; gap: 15px; }
+        .weather-info {
+            display: flex; align-items: center; gap: 10px; background: rgba(255, 255, 255, 0.05);
+            padding: 8px 15px; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .weather-icon { font-size: 1.25rem; }
+        .weather-temp { font-weight: 600; }
+        .room-selector { position: fixed; top: 100px; left: 30px; z-index: 1000; max-width: 200px; }
+        .room-header { padding: 20px; text-align: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); }
+        .room-title {
+            font-size: 0.75rem; font-weight: 600; letter-spacing: 2px; text-transform: uppercase;
+            color: rgba(255, 255, 255, 0.5); margin-bottom: 8px;
+        }
+        .room-count {
+            font-size: 1.5rem; font-weight: 700;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .room-list { padding: 15px; display: flex; flex-direction: column; gap: 8px; }
+        .btn-room {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.7); padding: 12px 20px; border-radius: 12px;
+            font-size: 0.875rem; font-weight: 500; text-align: left; transition: all 0.3s ease;
+            position: relative; overflow: hidden;
+        }
+        .btn-room::before {
+            content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent); transition: 0.5s;
+        }
+        .btn-room:hover::before { left: 100%; }
+        .btn-room:hover { background: rgba(255, 255, 255, 0.12); border-color: rgba(255, 255, 255, 0.3); color: white; transform: translateX(5px); }
+        .btn-room.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-color: rgba(255, 255, 255, 0.3); color: white; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        #status-panel {
+            position: fixed; top: 100px; right: 30px; z-index: 1000; min-width: 280px;
+            display: flex; flex-direction: column; gap: 15px;
+        }
+        .temp-card { padding: 25px; }
+        .temp-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 20px; }
+        .temp-icon {
+            width: 50px; height: 50px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            border-radius: 15px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; box-shadow: 0 4px 15px rgba(245, 87, 108, 0.3);
+        }
+        .temp-info { flex: 1; margin-left: 15px; }
+        .temp-label {
+            font-size: 0.75rem; color: rgba(255, 255, 255, 0.5); font-weight: 500;
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .temp-value {
+            font-size: 2.5rem; font-weight: 700;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            line-height: 1; margin-top: 5px;
+        }
+        .temp-target {
+            display: flex; align-items: center; justify-content: space-between; padding: 15px;
+            background: rgba(255, 255, 255, 0.05); border-radius: 12px; margin-top: 15px;
+            cursor: pointer; transition: all 0.3s ease;
+        }
+        .temp-target:hover { background: rgba(255, 255, 255, 0.08); transform: translateX(-3px); }
+        .target-label { font-size: 0.875rem; color: rgba(255, 255, 255, 0.6); }
+        .target-value { font-size: 1.25rem; font-weight: 600; color: white; }
+        .window-card { padding: 20px; display: flex; align-items: center; justify-content: space-between; }
+        .window-status { display: flex; align-items: center; gap: 12px; }
+        .window-icon {
+            width: 45px; height: 45px; border-radius: 12px; display: flex; align-items: center;
+            justify-content: center; font-size: 1.25rem; transition: all 0.3s ease;
+        }
+        .window-closed .window-icon {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
+        }
+        .window-open .window-icon {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            box-shadow: 0 4px 15px rgba(250, 112, 154, 0.3); animation: pulse 2s ease-in-out infinite;
+        }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        .window-text { flex: 1; }
+        .window-label {
+            font-size: 0.75rem; color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .window-state { font-size: 1rem; font-weight: 600; margin-top: 3px; }
+        .eve-card {
+            padding: 20px; cursor: pointer; transition: all 0.3s ease;
+            position: relative; overflow: hidden;
+        }
+        .eve-card::before {
+            content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0;
+            border-radius: 50%; background: rgba(255, 255, 255, 0.1);
+            transform: translate(-50%, -50%); transition: width 0.6s, height 0.6s;
+        }
+        .eve-card:active::before { width: 300px; height: 300px; }
+        .eve-content { display: flex; align-items: center; gap: 15px; position: relative; z-index: 1; }
+        .eve-icon {
+            width: 50px; height: 50px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 15px; display: flex; align-items: center; justify-content: center;
+            font-size: 1.5rem; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .eve-text { flex: 1; }
+        .eve-label {
+            font-size: 0.75rem; color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase; letter-spacing: 1px;
+        }
+        .eve-title { font-size: 1.125rem; font-weight: 600; margin-top: 3px; }
+        .eve-arrow { font-size: 1.5rem; color: rgba(255, 255, 255, 0.3); transition: all 0.3s ease; }
+        .eve-card:hover .eve-arrow { color: white; transform: translateX(5px); }
+        #thermo-panel {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0.9);
+            opacity: 0; pointer-events: none; z-index: 2000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); max-width: 400px; width: 90%;
+        }
+        #thermo-panel.active { opacity: 1; transform: translate(-50%, -50%) scale(1); pointer-events: all; }
+        .thermo-backdrop {
+            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px);
+            opacity: 0; pointer-events: none; transition: opacity 0.3s ease; z-index: 1999;
+        }
+        .thermo-backdrop.active { opacity: 1; pointer-events: all; }
+        .thermo-content { padding: 30px; }
+        .thermo-header { text-align: center; margin-bottom: 30px; }
+        .thermo-title {
+            font-size: 0.875rem; color: rgba(255, 255, 255, 0.5);
+            text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px;
+        }
+        .thermo-subtitle { font-size: 1.5rem; font-weight: 600; }
+        .thermo-controls { display: flex; align-items: center; justify-content: center; gap: 30px; margin: 30px 0; }
+        .thermo-btn {
+            width: 60px; height: 60px; border-radius: 50%; border: none; font-size: 1.5rem;
+            font-weight: 600; color: white; cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .thermo-btn.minus { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+        .thermo-btn.plus { background: linear-gradient(135deg, #fa709a 0%, #fee140 100%); }
+        .thermo-btn:hover { transform: scale(1.1); }
+        .thermo-btn:active { transform: scale(0.95); }
+        .thermo-display {
+            font-size: 4rem; font-weight: 700; text-align: center;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .thermo-actions { display: flex; gap: 10px; margin-top: 30px; }
+        .btn-thermo {
+            flex: 1; padding: 15px; border: none; border-radius: 12px;
+            font-weight: 600; font-size: 0.875rem; cursor: pointer; transition: all 0.3s ease;
+        }
+        .btn-thermo.cancel { background: rgba(255, 255, 255, 0.1); color: white; }
+        .btn-thermo.confirm {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        .btn-thermo:hover { transform: translateY(-2px); }
+        .edit-controls {
+            position: fixed; bottom: 30px; right: 30px; z-index: 1000;
+            display: flex; flex-direction: column; gap: 10px; align-items: flex-end;
+        }
+        .btn-edit {
+            padding: 12px 24px; border: none; border-radius: 12px; font-weight: 600;
+            font-size: 0.875rem; cursor: pointer; transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+        .btn-edit.primary { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); color: white; }
+        .btn-edit.success { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); color: white; }
+        .btn-edit.view360 { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+        .btn-edit:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3); }
+        #draw-line { stroke: #ff4444; stroke-width: 2; fill: rgba(255, 68, 68, 0.2); stroke-dasharray: 5; pointer-events: none; }
+        .modal-content { background: white; color: black; }
+        .menu-toggle {
+            display: none; position: fixed; top: 15px; left: 15px; z-index: 2100;
+            width: 50px; height: 50px; border-radius: 12px;
+            background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2); align-items: center;
+            justify-content: center; cursor: pointer; font-size: 1.5rem; color: white;
+        }
+        .mobile-overlay {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); z-index: 1999;
+        }
+        .mobile-overlay.active { display: block; }
+        @media (max-width: 768px) {
+            .menu-toggle { display: flex; }
+            body { overflow-y: auto; }
+            .glass-header { position: relative; width: 100%; top: 0; left: 0; transform: none; border-radius: 0 0 20px 20px; padding: 15px; }
+            .header-left { display: none; }
+            .room-selector { position: fixed; left: -100%; top: 0; width: 250px; height: 100vh; z-index: 2000; transition: left 0.3s ease; max-width: none; }
+            .room-selector.open { left: 0; }
+            #status-panel {
+                position: fixed; top: auto; bottom: 0; left: 0; right: 0; width: 100%;
+                flex-direction: row; gap: 10px; padding: 10px; background: rgba(15, 12, 41, 0.95);
+                backdrop-filter: blur(20px); border-top: 1px solid rgba(255, 255, 255, 0.1);
+                border-radius: 20px 20px 0 0; overflow-x: auto; z-index: 900; min-width: auto;
+            }
+            .temp-card, .window-card, .eve-card { min-width: 180px; flex-shrink: 0; padding: 15px; }
+            #plan-wrapper {
+                padding: 20px 10px 180px 10px;
+                height: auto;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+            #plan-container {
+                position: relative;
+                top: 0; left: 0; right: 0; bottom: 0;
+                width: 100%;
+                height: auto;
+                min-height: 300px;
+                margin-top: 20px;
+            }
+            #panorama { height: 50vh; position: relative; }
+            #plan-img { width: 100%; height: auto; max-height: none; }
+            .edit-controls { bottom: 190px; right: 10px; gap: 8px; }
+        }
     </style>
 </head>
 <body>
 
-    <!-- Header Bar -->
-    <div class="header-bar glass-card">
-        <div class="header-section">
-            <div id="greeting" class="greeting-text">Chargement...</div>
-            <div id="clock" class="clock-text">00:00</div>
+<div class="menu-toggle" onclick="toggleMobileMenu()"><i class="fas fa-bars"></i></div>
+<div class="mobile-overlay" onclick="toggleMobileMenu()"></div>
+
+<div class="glass-header glass-card">
+    <div class="header-left">
+        <div id="greeting" class="welcome-text">Bonjour</div>
+        <div id="date-now" class="date-text">-- --- ----</div>
+    </div>
+    <div class="header-center"><div id="clock" class="clock-text">00:00</div></div>
+    <div class="header-right">
+        <div class="weather-info">
+            <span id="weather-icon" class="weather-icon">☁️</span>
+            <span id="weather-temp" class="weather-temp">--°C</span>
         </div>
-        <div class="header-section">
-            <div class="weather-widget">
-                <span id="weather-icon">☁️</span>
-                <span id="weather-temp">--°C</span>
+    </div>
+</div>
+
+<div class="room-selector glass-card">
+    <div class="room-header">
+        <div class="room-title">Ma Maison</div>
+        <div id="room-count" class="room-count">5 Pièces</div>
+    </div>
+    <div id="room-list" class="room-list"></div>
+</div>
+
+<div id="plan-wrapper">
+    <div id="plan-container">
+        <img src="Cuisine.jpg" id="plan-img" alt="Plan">
+        <div id="panorama"></div>
+        <svg id="svg-overlay" onclick="handleMapClick(event)">
+            <polyline id="draw-line" points=""></polyline>
+        </svg>
+    </div>
+</div>
+
+<div id="status-panel">
+    <div class="glass-card temp-card">
+        <div class="temp-header">
+            <div class="temp-info">
+                <div class="temp-label">Température</div>
+                <div id="txt-temp" class="temp-value">--°C</div>
+            </div>
+            <div class="temp-icon">🌡️</div>
+        </div>
+        <div class="temp-target" onclick="toggleThermo()">
+            <span class="target-label">Consigne</span>
+            <span id="txt-target" class="target-value">--°C</span>
+        </div>
+    </div>
+    <div class="glass-card window-card">
+        <div id="window-status-container" class="window-status window-closed">
+            <div class="window-icon">🪟</div>
+            <div class="window-text">
+                <div class="window-label">Fenêtres</div>
+                <div id="window-state" class="window-state">Fermées</div>
             </div>
         </div>
     </div>
-
-    <!-- Left Sidebar: Rooms -->
-    <div id="room-sidebar" class="sidebar-left">
-        <!-- Dynamically filled -->
-    </div>
-
-    <!-- Main Content -->
-    <div id="main-view">
-        <div id="panorama-container">
-            <div id="panorama"></div>
+    <div class="glass-card eve-card" onclick="launchEve()">
+        <div class="eve-content">
+            <div class="eve-icon">🤖</div>
+            <div class="eve-text">
+                <div class="eve-label">Robot Aspirateur</div>
+                <div id="eve-title" class="eve-title">Lancer EVE</div>
+            </div>
+            <div class="eve-arrow">→</div>
         </div>
     </div>
+</div>
 
-    <!-- Right Sidebar: Status -->
-    <div class="sidebar-right">
-        <!-- Temperature -->
-        <div class="glass-card status-card">
-            <div class="status-header">
-                <span>Température</span>
-                <i class="fas fa-thermometer-half"></i>
-            </div>
-            <div id="txt-temp" class="status-value">--°C</div>
-            <div class="status-footer" onclick="toggleThermo()">
-                <span>Consigne</span>
-                <span id="txt-target">--°C</span>
-            </div>
+<div class="thermo-backdrop" onclick="toggleThermo()"></div>
+<div id="thermo-panel" class="glass-card">
+    <div class="thermo-content">
+        <div class="thermo-header">
+            <div class="thermo-title">Réglage</div>
+            <div id="thermo-subtitle" class="thermo-subtitle">Température Cible</div>
         </div>
-
-        <!-- Windows -->
-        <div id="window-card" class="glass-card status-card">
-            <div class="status-header">
-                <span>Fenêtres</span>
-                <i class="fas fa-window-maximize"></i>
-            </div>
-            <div id="window-state" class="status-value">Fermées</div>
+        <div class="thermo-controls">
+            <button class="thermo-btn minus" onclick="adjustTemp(-0.5)">-</button>
+            <div id="set-val" class="thermo-display">20.0</div>
+            <button class="thermo-btn plus" onclick="adjustTemp(0.5)">+</button>
         </div>
-
-        <!-- Robot -->
-        <div class="glass-card status-card" onclick="launchEve()" style="cursor: pointer;">
-            <div class="status-header">
-                <span>Robot Aspirateur</span>
-                <i class="fas fa-robot"></i>
-            </div>
-            <div class="status-value" style="font-size: 1.2rem;">Lancer Nettoyage</div>
+        <div class="thermo-actions">
+            <button class="btn-thermo cancel" onclick="toggleThermo()">Annuler</button>
+            <button class="btn-thermo confirm" onclick="setThermostat()">Valider</button>
         </div>
     </div>
+</div>
 
-    <!-- Bottom Controls -->
-    <div class="bottom-controls glass-card">
-        <button id="btn-edit" class="btn-action btn-edit" onclick="toggleEdit()">
-            <i class="fas fa-edit"></i> Modifier
-        </button>
-        <button id="btn-save" class="btn-action btn-save" onclick="saveToJSON()" style="display: none;">
-            <i class="fas fa-save"></i> Enregistrer
-        </button>
-    </div>
+<div class="edit-controls">
+    <button id="btn-360" class="btn-edit view360" onclick="toggle360View()">
+        <i class="fas fa-globe"></i> Vue 360°
+    </button>
+    <button id="btn-edit" class="btn-edit primary" onclick="toggleEdit()">
+        <i class="fas fa-pen"></i> Modifier Plan
+    </button>
+    <button id="btn-save" class="btn-edit success" style="display: none;" onclick="saveToJSON()">
+        <i class="fas fa-save"></i> Sauvegarder
+    </button>
+</div>
 
-    <!-- Thermostat Panel -->
-    <div id="thermo-overlay" onclick="if(event.target === this) toggleThermo()">
-        <div class="thermo-panel glass-card">
-            <h3 style="margin-bottom: 20px;">Réglage Consigne</h3>
-            <div style="display: flex; align-items: center; justify-content: center; gap: 20px;">
-                <button class="thermo-btn" onclick="adjustTemp(-0.5)">-</button>
-                <div id="set-val" class="thermo-val">20.0</div>
-                <button class="thermo-btn" onclick="adjustTemp(0.5)">+</button>
-            </div>
-            <div style="margin-top: 30px; display: flex; gap: 10px;">
-                <button class="btn btn-secondary w-100" style="border-radius: 12px; padding: 12px;" onclick="toggleThermo()">Annuler</button>
-                <button class="btn btn-primary w-100" style="border-radius: 12px; padding: 12px;" onclick="setThermostat()">Valider</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- HA Modal -->
-    <div id="modal-overlay" onclick="closeModal()"></div>
-    <div id="ha-modal" class="glass-card">
-        <iframe id="ha-frame" src="" style="width:100%; height:100%; border:none;"></iframe>
-    </div>
-
-    <!-- Config Modal -->
-    <div class="modal fade" id="configModal" tabindex="-1" style="color: black; z-index: 5000;">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content glass-card" style="background: white;">
-                <div class="modal-header">
-                    <h5 class="modal-title">Configuration Hotspot</h5>
+<div class="modal fade" id="configModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header"><h5 class="modal-title">Configuration</h5></div>
+            <div class="modal-body">
+                <input type="hidden" id="edit-idx">
+                <input type="hidden" id="edit-type">
+                <div class="mb-3">
+                    <label class="form-label">Nom</label>
+                    <input type="text" id="zone-name" class="form-control">
                 </div>
-                <div class="modal-body">
-                    <input type="hidden" id="edit-idx">
-                    <div class="mb-3">
-                        <label class="form-label">Nom / Tooltip</label>
-                        <input type="text" id="node-name" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Entité HA ou URL</label>
-                        <input type="text" id="node-url" class="form-control">
-                    </div>
+                <div class="mb-3">
+                    <label class="form-label">URL ou Entité</label>
+                    <input type="text" id="zone-url" class="form-control">
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-danger me-auto" onclick="deleteHotspot()">Supprimer</button>
-                    <button type="button" class="btn btn-primary" onclick="confirmHotspot()">Enregistrer</button>
-                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-danger me-auto" onclick="deleteItem()">Supprimer</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                <button type="button" class="btn btn-primary" onclick="confirmItem()">OK</button>
             </div>
         </div>
     </div>
+</div>
+
+<div class="modal fade" id="haModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content glass-card" style="background: rgba(15, 12, 41, 0.95); border: 1px solid rgba(255, 255, 255, 0.2);">
+            <div class="modal-header border-0">
+                <h5 class="modal-title" id="haModalTitle" style="color: white;">Action</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0" style="height: 70vh;">
+                <iframe id="haFrame" src="" style="width: 100%; height: 100%; border: none;"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
 
 <script>
 let HA_URL, TOKEN, WEATHER_ENTITY, ROOMS = [];
-let curR = 0, hotspots = [], editMode = false, headers = {};
-let panoViewer = null;
-const bModal = new bootstrap.Modal(document.getElementById('configModal'));
+let headers = {};
 
 async function loadGlobalConfig() {
     try {
         const res = await fetch('config.json?t=' + Date.now());
+        if (!res.ok) throw new Error("Fichier config.json introuvable");
         const config = await res.json();
         HA_URL = config.ha_url;
         TOKEN = config.ha_token;
         WEATHER_ENTITY = config.weather_entity;
-        ROOMS = config.rooms;
+        ROOMS = config.rooms.map(r => ({
+            ...r,
+            vacuum: r.vacuum_entity,
+            window: r.window_entity
+        }));
         headers = { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" };
         return true;
-    } catch(e) { return false; }
+    } catch(e) {
+        console.error("Erreur chargement config.json:", e);
+        return false;
+    }
+}
+
+let curR = 0, zones = [], hotspots = [], currentPoints = [], editMode = false, is360Active = false, panoViewer = null;
+const bModal = new bootstrap.Modal(document.getElementById('configModal'));
+let haModalInstance = null;
+let isSaving = false;
+
+async function saveToJSON(silent = false) {
+    if (isSaving) return;
+    isSaving = true;
+    const r = ROOMS[curR];
+    const btnSave = document.getElementById('btn-save');
+
+    if (btnSave && !silent) btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...';
+
+    const payload = {
+        room: r.n,
+        zones: zones,
+        hotspots: hotspots
+    };
+
+    try {
+        // Tentative 1: PHP Local
+        const res = await fetch('save_hotspots.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        if (data.status === 'success') {
+            console.log("✅ Sauvegarde locale PHP réussie");
+            if (!silent) { alert(`✅ Sauvegardé (PHP) pour ${r.n} !`); toggleEdit(); }
+            isSaving = false;
+            if (btnSave && !silent) btnSave.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
+            return;
+        }
+        throw new Error(data.message || "Erreur PHP");
+    } catch (e) {
+        console.warn("⚠️ Échec PHP, tentative fallback Home Assistant...", e);
+        try {
+            // Tentative 2: Fallback HA via api_ha.php
+            const resHA = await fetch('api_ha.php?action=save_config', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+            if (resHA.ok) {
+                console.log("✅ Sauvegarde via Fallback HA réussie");
+                if (!silent) { alert(`✅ Sauvegardé (HA Fallback) pour ${r.n} !`); toggleEdit(); }
+            } else {
+                throw new Error("Erreur Fallback HA");
+            }
+        } catch (e2) {
+            console.error("❌ ÉCHEC TOTAL DE SAUVEGARDE:", e2);
+            if (!silent) alert("🚨 IMPOSSIBLE DE SAUVEGARDER\n(PHP et HA ont échoué)");
+        }
+    } finally {
+        isSaving = false;
+        if (btnSave && !silent) btnSave.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
+    }
+}
+
+async function loadFromJSON() {
+    const r = ROOMS[curR];
+    const fileName = `config_${r.n.toLowerCase()}.json`;
+    console.log(`📂 Chargement ${fileName}...`);
+
+    try {
+        const res = await fetch(`${fileName}?t=${Date.now()}`);
+        if (res.ok) {
+            const data = await res.json();
+            zones = data.zones || [];
+            hotspots = data.hotspots || [];
+            console.log(`   ${zones.length} zones, ${hotspots.length} hotspots chargés (PHP).`);
+            return;
+        }
+        throw new Error("Fichier absent");
+    } catch(e) {
+        console.warn(`📂 Fichier ${fileName} absent ou PHP inactif, tentative HA...`);
+        try {
+            // Fallback: charger depuis l'entité HA
+            const config = await fetch('config.json').then(r => r.json());
+            const entityId = config.persistence_entity || 'input_text.maison_config';
+            const state = await getEntityState(entityId);
+            if (state && state.attributes && state.attributes['config_' + r.n.toLowerCase()]) {
+                const data = JSON.parse(state.attributes['config_' + r.n.toLowerCase()]);
+                zones = data.zones || [];
+                hotspots = data.hotspots || [];
+                console.log(`   ${zones.length} zones, ${hotspots.length} hotspots chargés (HA Fallback).`);
+            } else {
+                console.warn("   Aucune donnée trouvée dans HA Fallback.");
+                zones = []; hotspots = [];
+            }
+        } catch (e2) {
+            console.error("❌ Erreur totale de chargement:", e2);
+            zones = []; hotspots = [];
+        }
+    }
 }
 
 async function callHA(domain, service, data) {
     try {
-        await fetch(`${HA_URL}/api/services/${domain}/${service}`, {
-            method: 'POST', headers, body: JSON.stringify(data)
-        });
-    } catch(e) { console.error(e); }
+        await fetch(`${HA_URL}/api/services/${domain}/${service}`, { method: 'POST', headers, body: JSON.stringify(data) });
+    } catch(e) { console.error("Error:", e); }
 }
 
 async function getEntityState(entity_id) {
@@ -404,220 +593,323 @@ async function getEntityState(entity_id) {
     } catch (e) { return null; }
 }
 
-function updateClock() {
+function updateHeader() {
     const now = new Date();
-    document.getElementById('clock').innerText = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    document.getElementById('clock').innerText = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    document.getElementById('date-now').innerText = now.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' });
     const hour = now.getHours();
-    let g = "Bonjour";
-    if (hour >= 18) g = "Bonsoir";
-    if (hour >= 23 || hour < 5) g = "Bonne nuit";
-    document.getElementById('greeting').innerText = g;
+    document.getElementById('greeting').innerText = hour >= 22 || hour < 5 ? "Douce nuit" : hour >= 18 ? "Bonsoir" : "Bonjour";
+}
+
+async function fetchWeather() {
+    const state = await getEntityState(WEATHER_ENTITY);
+    if (!state) return;
+    document.getElementById('weather-temp').innerText = `${Math.round(state.attributes.temperature)}°C`;
+    const icons = {
+        'clear-night': '🌙', 'cloudy': '☁️', 'fog': '🌫️', 'sunny': '☀️',
+        'rainy': '🌦️', 'snowy': '❄️', 'partlycloudy': '⛅'
+    };
+    document.getElementById('weather-icon').innerText = icons[state.state] || '🌡️';
+}
+
+function initRoomSelector() {
+    document.getElementById('room-list').innerHTML = ROOMS.map((r, i) =>
+        `<button class="btn-room ${i === curR ? 'active' : ''}" onclick="switchRoom(${i}, this)">${r.icon} ${r.n}</button>`
+    ).join('');
+    document.getElementById('room-count').innerText = `${ROOMS.length} Pièces`;
 }
 
 async function updateStatus() {
-    updateClock();
     const r = ROOMS[curR];
-
-    // Weather
-    const w = await getEntityState(WEATHER_ENTITY);
-    if(w) {
-        document.getElementById('weather-temp').innerText = `${w.attributes.temperature}°C`;
-        const icons = { sunny:'☀️', cloudy:'☁️', partlycloudy:'⛅', rainy:'🌧️', 'clear-night':'🌙' };
-        document.getElementById('weather-icon').innerText = icons[w.state] || '🌡️';
+    const tState = await getEntityState(r.temp);
+    if(tState) {
+        const temp = parseFloat(tState.state);
+        const el = document.getElementById('txt-temp');
+        el.innerText = `${temp.toFixed(1)}°C`;
+        const icon = document.querySelector('.temp-icon');
+        if (temp >= 23) {
+            icon.style.background = 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)';
+            el.style.background = 'linear-gradient(135deg, #ff0844 0%, #ffb199 100%)';
+        } else if (temp <= 19) {
+            icon.style.background = 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+            el.style.background = 'linear-gradient(135deg, #2af598 0%, #009efd 100%)';
+        } else {
+            icon.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+            el.style.background = 'linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.7) 100%)';
+        }
+        el.style.webkitBackgroundClip = 'text';
+        el.style.webkitTextFillColor = 'transparent';
     }
-
-    // Temperature
-    const t = await getEntityState(r.temp);
-    if(t) document.getElementById('txt-temp').innerText = `${parseFloat(t.state).toFixed(1)}°C`;
-
-    // Climate
-    const c = await getEntityState(r.climate);
-    if(c) {
-        const target = c.attributes.temperature || "--";
+    const cState = await getEntityState(r.climate);
+    if(cState) {
+        const target = cState.attributes.temperature || "--";
         document.getElementById('txt-target').innerText = `${target}°C`;
         document.getElementById('set-val').innerText = parseFloat(target).toFixed(1);
     }
-
-    // Window
-    if(r.window_entity) {
-        const ws = await getEntityState(r.window_entity);
-        const el = document.getElementById('window-state');
-        const card = document.getElementById('window-card');
-        if(ws && (ws.state === 'on' || ws.state === 'open')) {
-            el.innerText = "Ouverte ⚠️";
-            card.style.background = "rgba(239, 68, 68, 0.2)";
+    if(r.window) {
+        const wState = await getEntityState(r.window);
+        const container = document.getElementById('window-status-container');
+        const stateText = document.getElementById('window-state');
+        if(wState && (wState.state === 'on' || wState.state === 'open')) {
+            container.className = "window-status window-open";
+            stateText.innerText = "Ouverte ⚠️";
         } else {
-            el.innerText = "Fermées";
-            card.style.background = "var(--glass)";
+            container.className = "window-status window-closed";
+            stateText.innerText = "Fermées";
         }
     }
 }
 
-async function switchRoom(idx) {
+async function switchRoom(idx, btn) {
+    if (curR === idx && !btn) return;
     curR = idx;
-    document.querySelectorAll('.btn-room').forEach((b, i) => b.classList.toggle('active', i === idx));
-
     const r = ROOMS[curR];
-    const timestamp = Date.now();
+    if(window.innerWidth <= 768) {
+        document.querySelector('.room-selector').classList.remove('open');
+        document.querySelector('.mobile-overlay').classList.remove('active');
+    }
+    document.querySelectorAll('.btn-room').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    const btn360 = document.getElementById('btn-360');
+    if(r.img360) {
+        btn360.style.display = 'block';
+        btn360.innerHTML = '<i class="fas fa-globe"></i> Vue 360°';
+    } else {
+        btn360.style.display = 'none';
+    }
+    if(is360Active) toggle360View();
+    const img = document.getElementById('plan-img');
+    img.classList.add('fading');
+    setTimeout(async () => {
+        img.src = r.img;
+        await loadFromJSON();
+        await updateStatus();
+        drawZones();
+        img.onload = () => {
+            img.classList.remove('fading');
+            setTimeout(syncSVG, 50);
+        };
+        if (img.complete) {
+            img.classList.remove('fading');
+            syncSVG();
+        }
+        console.log(`📍 ${r.n} | Zones: ${zones.length} | Hotspots: ${hotspots.length}`);
+    }, 400);
+    document.getElementById('thermo-panel').classList.remove('active');
+    document.querySelector('.thermo-backdrop').classList.remove('active');
+}
 
-    // Reset data
-    hotspots = [];
-    
-    // Load Hotspots
-    try {
-        const res = await fetch(`${r.config_360}?t=${timestamp}`);
-        if(res.ok) hotspots = await res.json();
-    } catch(e) {}
-
-    initPannellum();
-    updateStatus();
+function toggle360View() {
+    const r = ROOMS[curR];
+    if(!r.img360) { alert("Pas d'image 360°"); return; }
+    is360Active = !is360Active;
+    const img = document.getElementById('plan-img');
+    const pano = document.getElementById('panorama');
+    const svg = document.getElementById('svg-overlay');
+    const btn = document.getElementById('btn-360');
+    if(is360Active) {
+        img.classList.add('hidden');
+        svg.style.display = 'none';
+        pano.classList.add('active');
+        btn.innerHTML = '<i class="fas fa-map"></i> Plan 2D';
+        initPannellum();
+    } else {
+        img.classList.remove('hidden');
+        svg.style.display = 'block';
+        pano.classList.remove('active');
+        btn.innerHTML = '<i class="fas fa-globe"></i> Vue 360°';
+        if(panoViewer) panoViewer.destroy();
+        drawZones();
+    }
 }
 
 function initPannellum() {
     if(panoViewer) panoViewer.destroy();
-    const r = ROOMS[curR];
-
+    console.log("🌐 Init Pannellum:", hotspots.length, "hotspots");
     panoViewer = pannellum.viewer('panorama', {
         "type": "equirectangular",
-        "panorama": r.img360,
+        "panorama": ROOMS[curR].img360,
         "autoLoad": true,
+        "showControls": false,
         "hotSpots": hotspots.map((h, i) => ({
-            pitch: h.pi ?? h.pitch ?? 0,
-            yaw: h.y ?? h.yaw ?? 0,
+            pitch: parseFloat(h.pitch ?? h.pi ?? 0),
+            yaw: parseFloat(h.yaw ?? h.y ?? 0),
             cssClass: 'custom-hotspot',
-            createTooltipFunc: (el) => {
-                const tooltip = document.createElement('div');
-                tooltip.style.cssText = "background: rgba(0,0,0,0.8); color: white; padding: 5px 12px; border-radius: 20px; font-size: 13px; transform: translateY(-40px);";
-                tooltip.innerText = h.n;
-                el.appendChild(tooltip);
-            },
-            clickHandlerFunc: () => editMode ? openConfig(i) : handleAction(h)
+            clickHandlerFunc: () => editMode ? openConfig(i, '360') : handleAction(h)
         }))
     });
-
-    let startX, startY;
-    panoViewer.on('mousedown', e => { startX = e.clientX; startY = e.clientY; });
-    panoViewer.on('mouseup', e => {
+    panoViewer.on('mousedown', (e) => {
         if(!editMode) return;
-        const dist = Math.sqrt(Math.pow(e.clientX - startX, 2) + Math.pow(e.clientY - startY, 2));
-        if (dist < 5) {
-            const c = panoViewer.mouseEventToCoords(e);
-            hotspots.push({ n: "Nouveau", pi: c[0], y: c[1], u: "" });
+        const c = panoViewer.mouseEventToCoords(e);
+        if(c) {
+            hotspots.push({ n: "Nouveau", pitch: c[0], yaw: c[1], u: "" });
             initPannellum();
-            openConfig(hotspots.length - 1);
+            setTimeout(() => openConfig(hotspots.length - 1, '360'), 200);
         }
     });
 }
 
-async function handleAction(h) {
-    const url = h.u || h.url;
-    if(!url) return;
-    if(url.includes('.') && !url.includes('/')) {
-        await callHA('homeassistant', 'toggle', { entity_id: url });
-    } else {
-        document.getElementById('ha-frame').src = url;
-        document.getElementById('ha-modal').style.display = 'block';
-        document.getElementById('modal-overlay').style.display = 'block';
-    }
-}
-
-function toggleEdit() {
-    editMode = !editMode;
-    const btn = document.getElementById('btn-edit');
-    btn.classList.toggle('active', editMode);
-    btn.innerHTML = editMode ? '<i class="fas fa-times"></i> Quitter' : '<i class="fas fa-edit"></i> Modifier';
-    document.getElementById('btn-save').style.display = editMode ? 'block' : 'none';
-}
-
-function openConfig(idx) {
-    document.getElementById('edit-idx').value = idx;
-    const h = hotspots[idx];
-    document.getElementById('node-name').value = h.n;
-    document.getElementById('node-url').value = h.u || h.url || "";
-    bModal.show();
-}
-
-function confirmHotspot() {
-    const i = parseInt(document.getElementById('edit-idx').value);
-    if (!isNaN(i)) {
-        hotspots[i].n = document.getElementById('node-name').value;
-        hotspots[i].u = document.getElementById('node-url').value;
-    }
-    bModal.hide();
-    initPannellum();
-}
-
-function deleteHotspot() {
-    const i = parseInt(document.getElementById('edit-idx').value);
-    if (!isNaN(i)) {
-        hotspots.splice(i, 1);
-    }
-    bModal.hide();
-    initPannellum();
-}
-
-async function saveToJSON() {
-    const r = ROOMS[curR];
-    try {
-        const res = await fetch('save_hotspots.php', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ file: r.config_360, content: hotspots })
-        });
-        const data = await res.json();
-        if(data.success) {
-            alert("✅ Configuration sauvegardée !");
-            toggleEdit();
-        } else throw new Error(data.error);
-    } catch(e) { alert("❌ Erreur: " + e.message); }
-}
-
 function toggleThermo() {
-    const el = document.getElementById('thermo-overlay');
-    el.style.display = (el.style.display === 'flex') ? 'none' : 'flex';
+    document.getElementById('thermo-panel').classList.toggle('active');
+    document.querySelector('.thermo-backdrop').classList.toggle('active');
 }
 
-function adjustTemp(v) {
+function adjustTemp(val) {
     const el = document.getElementById('set-val');
-    let c = parseFloat(el.innerText);
-    el.innerText = Math.max(5, Math.min(30, c + v)).toFixed(1);
+    let curr = parseFloat(el.innerText);
+    curr = Math.max(5, Math.min(30, curr + val));
+    el.innerText = curr.toFixed(1);
 }
 
 async function setThermostat() {
     const r = ROOMS[curR];
-    const val = parseFloat(document.getElementById('set-val').innerText);
-    await callHA("climate", "set_temperature", { entity_id: r.climate, temperature: val });
+    const newTemp = parseFloat(document.getElementById('set-val').innerText);
+    await callHA("climate", "set_temperature", { entity_id: r.climate, temperature: newTemp });
     toggleThermo();
     setTimeout(updateStatus, 1000);
 }
 
 async function launchEve() {
-    await callHA("button", "press", { entity_id: ROOMS[curR].vacuum_entity });
-    alert("🤖 EVE est en route !");
+    const r = ROOMS[curR];
+    await callHA("button", "press", { entity_id: r.vacuum });
+    alert(`🤖 EVE en route pour ${r.n}!`);
 }
 
-function closeModal() {
-    document.getElementById('ha-modal').style.display = 'none';
-    document.getElementById('modal-overlay').style.display = 'none';
-    document.getElementById('ha-frame').src = '';
+function syncSVG() {
+    const img = document.getElementById('plan-img');
+    const svg = document.getElementById('svg-overlay');
+    if(!img.clientWidth) return;
+    svg.setAttribute("viewBox", `0 0 ${img.clientWidth} ${img.clientHeight}`);
+    svg.style.width = img.clientWidth + "px";
+    svg.style.height = img.clientHeight + "px";
+    drawZones();
 }
 
-// Init
-(async () => {
-    if(await loadGlobalConfig()) {
-        const sidebar = document.getElementById('room-sidebar');
-        sidebar.innerHTML = ROOMS.map((r, i) => `
-            <div class="btn-room" onclick="switchRoom(${i})">
-                <span style="font-size: 1.2rem;">${r.icon}</span>
-                <span>${r.n}</span>
-            </div>
-        `).join('');
+function handleMapClick(e) {
+    if(!editMode || is360Active) return;
+    const img = document.getElementById('plan-img');
+    const rect = img.getBoundingClientRect();
+    const x = Math.round(((e.clientX - rect.left) / rect.width) * 100);
+    const y = Math.round(((e.clientY - rect.top) / rect.height) * 100);
+    currentPoints.push(`${x},${y}`);
+    updateDrawLine();
+}
 
-        switchRoom(0);
-        setInterval(updateStatus, 30000);
-    } else {
-        alert("Erreur critique: config.json manquant.");
+function updateDrawLine() {
+    const img = document.getElementById('plan-img');
+    const rect = img.getBoundingClientRect();
+    const pts = currentPoints.map(p => {
+        const [px, py] = p.split(',');
+        return `${(px * rect.width) / 100},${(py * rect.height) / 100}`;
+    }).join(' ');
+    document.getElementById('draw-line').setAttribute("points", pts);
+}
+
+window.onkeydown = (e) => {
+    if(e.key === "Enter" && editMode && !is360Active && currentPoints.length > 2) {
+        zones.push({ n: "Nouveau", points: currentPoints.join(' '), u: "" });
+        currentPoints = [];
+        document.getElementById('draw-line').setAttribute("points", "");
+        drawZones();
+        openConfig(zones.length - 1, '2D');
     }
+};
+
+function drawZones() {
+    const svg = document.getElementById('svg-overlay');
+    const img = document.getElementById('plan-img');
+    const line = document.getElementById('draw-line');
+    svg.innerHTML = '';
+    svg.appendChild(line);
+    zones.forEach((z, i) => {
+        const poly = document.createElementNS("http://www.w3.org/2000/svg", "polygon");
+        const pts = z.points.split(' ').map(p => {
+            const [px, py] = p.split(',');
+            return `${px * img.clientWidth / 100},${py * img.clientHeight / 100}`;
+        }).join(' ');
+        poly.setAttribute("points", pts);
+        poly.setAttribute("class", "zone-poly");
+        poly.onclick = (e) => { e.stopPropagation(); editMode ? openConfig(i, '2D') : handleAction(z); };
+        svg.appendChild(poly);
+    });
+}
+
+function toggleEdit() {
+    editMode = !editMode;
+    document.getElementById('btn-edit').innerText = editMode ? "Quitter" : "Modifier Plan";
+    document.getElementById('btn-save').style.display = editMode ? "block" : "none";
+    document.getElementById('svg-overlay').style.pointerEvents = editMode ? "all" : "none";
+    currentPoints = [];
+    updateDrawLine();
+}
+
+function openConfig(idx, type) {
+    document.getElementById('edit-idx').value = idx;
+    document.getElementById('edit-type').value = type || '2D';
+    const item = (type === '360') ? hotspots[idx] : zones[idx];
+    document.getElementById('zone-name').value = item.n || item.name;
+    document.getElementById('zone-url').value = item.u || item.url || "";
+    bModal.show();
+}
+
+function confirmItem() {
+    const i = parseInt(document.getElementById('edit-idx').value);
+    const type = document.getElementById('edit-type').value;
+    const item = (type === '360') ? hotspots[i] : zones[i];
+    item.n = document.getElementById('zone-name').value;
+    item.u = document.getElementById('zone-url').value;
+    bModal.hide();
+    is360Active ? initPannellum() : drawZones();
+    // Ne plus sauvegarder automatiquement - attendre le clic sur SAUVEGARDER
+    console.log("✏️ Modification effectuée (non sauvegardée)");
+}
+
+function deleteItem() {
+    const i = parseInt(document.getElementById('edit-idx').value);
+    const type = document.getElementById('edit-type').value;
+    if(type === '360') hotspots.splice(i, 1);
+    else zones.splice(i, 1);
+    bModal.hide();
+    is360Active ? initPannellum() : drawZones();
+    // Ne plus sauvegarder automatiquement - attendre le clic sur SAUVEGARDER
+    console.log("🗑️ Suppression effectuée (non sauvegardée)");
+}
+
+async function handleAction(item) {
+    const url = item.u || item.url;
+    if(!url) return;
+    if(url.includes('.') && !url.includes('/')) {
+        await callHA('homeassistant', 'toggle', { entity_id: url });
+    } else {
+        if(!haModalInstance) haModalInstance = new bootstrap.Modal(document.getElementById('haModal'));
+        document.getElementById('haModalTitle').innerText = item.n || item.name || "Action";
+        document.getElementById('haFrame').src = url;
+        haModalInstance.show();
+    }
+}
+
+function toggleMobileMenu() {
+    document.querySelector('.room-selector').classList.toggle('open');
+    document.querySelector('.mobile-overlay').classList.toggle('active');
+}
+
+(async () => {
+    const configLoaded = await loadGlobalConfig();
+    if (!configLoaded) {
+        alert("Erreur critique: Impossible de charger la configuration.");
+        return;
+    }
+    initRoomSelector();
+    await switchRoom(0);
+    document.getElementById('haModal').addEventListener('hidden.bs.modal', () => {
+        document.getElementById('haFrame').src = "";
+    });
+    updateHeader();
+    fetchWeather();
+    setInterval(updateHeader, 10000);
+    setInterval(fetchWeather, 600000);
+    setInterval(updateStatus, 30000);
+    window.onresize = syncSVG;
 })();
 </script>
 </body>

@@ -1,47 +1,78 @@
 <?php
-// Script de sauvegarde locale pour Mon Intra
-// Permet de contourner la limite de 255 caractères de Home Assistant
+header('Content-Type: application/json');
 
-$input = file_get_contents('php://input');
-$data = json_decode($input, true);
+$response = ['status' => 'error', 'message' => 'An unknown error occurred.'];
 
-if (!$data || !isset($data['file']) || !isset($data['content'])) {
-    http_response_code(400);
-    exit(json_encode(["error" => "Données invalides"]));
-}
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $input = json_decode(file_get_contents('php://input'), true);
 
-$filename = basename($data['file']); // Sécurité : on garde juste le nom du fichier
+    if (!isset($input['room'])) {
+        $response['message'] = 'Invalid input: room missing.';
+        http_response_code(400);
+        echo json_encode($response);
+        exit;
+    }
 
-// Protection : Autoriser uniquement l'écriture des fichiers de configuration spécifiques
-// pour éviter d'écraser config.json ou d'autres fichiers sensibles.
-if (!str_starts_with($filename, 'config_') || !str_ends_with($filename, '.json')) {
-    http_response_code(403);
-    exit(json_encode(["error" => "Écriture interdite pour ce fichier (autorisé: config_*.json uniquement)"]));
-}
+    // Sanitize room name to prevent path traversal
+    $roomName = preg_replace('/[^a-zA-Z0-9_\-]/', '', $input['room']);
+    if (empty($roomName)) {
+        $response['message'] = 'Invalid room name.';
+        http_response_code(400);
+        echo json_encode($response);
+        exit;
+    }
 
-$content = json_encode($data['content'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    $configFile = 'config_' . strtolower($roomName) . '.json';
 
-if ($content === false) {
-    http_response_code(500);
-    exit(json_encode(["error" => "Erreur d'encodage JSON : " . json_last_error_msg()]));
-}
+    $hotspots = isset($input['hotspots']) ? $input['hotspots'] : null;
+    $zones = isset($input['zones']) ? $input['zones'] : null;
 
-// Vérifier si le fichier existe et s'il est accessible en écriture
-if (file_exists($filename) && !is_writable($filename)) {
-    http_response_code(500);
-    exit(json_encode(["error" => "Le fichier $filename existe mais n'est pas modifiable. Vérifiez les permissions CHMOD."]));
-}
+    // Attempt to open/create the file
+    $fileHandle = fopen($configFile, 'c+');
+    if ($fileHandle && flock($fileHandle, LOCK_EX)) {
+        // Clear stat cache to get accurate filesize
+        clearstatcache(true, $configFile);
+        $filesize = filesize($configFile);
 
-// On vérifie le dossier si le fichier n'existe pas
-if (!file_exists($filename) && !is_writable('.')) {
-    http_response_code(500);
-    exit(json_encode(["error" => "Impossible de créer $filename. Le dossier n'est pas modifiable par PHP."]));
-}
+        $currentData = [];
+        if ($filesize > 0) {
+            $content = fread($fileHandle, $filesize);
+            $currentData = json_decode($content, true) ?: [];
+        }
 
-if (file_put_contents($filename, $content) !== false) {
-    echo json_encode(["success" => true, "message" => "Fichier $filename sauvegardé avec succès"]);
+        // Update data
+        if ($hotspots !== null) {
+            $currentData['hotspots'] = $hotspots;
+        }
+        if ($zones !== null) {
+            $currentData['zones'] = $zones;
+        }
+
+        $newJsonData = json_encode($currentData, JSON_PRETTY_PRINT);
+
+        // Go to the beginning, truncate and write
+        ftruncate($fileHandle, 0);
+        rewind($fileHandle);
+
+        if (fwrite($fileHandle, $newJsonData)) {
+            $response = ['status' => 'success', 'message' => 'Configuration saved successfully.'];
+        } else {
+            $response['message'] = 'Failed to write to config file.';
+            http_response_code(500);
+        }
+
+        fflush($fileHandle);
+        flock($fileHandle, LOCK_UN);
+    } else {
+        $response['message'] = 'Could not get a lock on the config file or open it.';
+        http_response_code(500);
+    }
+    if ($fileHandle) fclose($fileHandle);
+
 } else {
-    $lastError = error_get_last();
-    http_response_code(500);
-    echo json_encode(["error" => "Erreur système lors de l'écriture : " . ($lastError['message'] ?? 'inconnue')]);
+    $response['message'] = 'Invalid request method.';
+    http_response_code(405);
 }
+
+echo json_encode($response);
+?>

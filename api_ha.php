@@ -3,26 +3,69 @@ session_start();
 if (!isset($_SESSION['auth_maison'])) { exit("Non autorisé"); }
 
 // --- CONFIGURATION ---
-$ha_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3MGExZjE5NjUxNjQ0MDlkOTg5YTQwYjcxYmFiZGFhNyIsImlhdCI6MTc2OTIwNzcwNywiZXhwIjoyMDg0NTY3NzA3fQ.lb_boLkzECcmS1PCwVxzP607Thp8fHXC36jXwTgGdeM"; 
-$ha_url = "http://192.168.1.52:8123";
+$config = json_decode(file_get_contents('config.json'), true);
+$ha_token = $config['ha_token'];
+$ha_url = $config['ha_url'];
 
 $action = $_GET['action'] ?? null;
 $entity = $_GET['entity'] ?? null;
 
+// Fallback for saving config directly to HA if PHP storage is unavailable
+if ($action === 'save_config') {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input || !isset($input['room'])) {
+        exit("Invalid input");
+    }
+
+    $target_entity = $config['persistence_entity'] ?? 'input_text.maison_config';
+    $room = strtolower($input['room']);
+
+    // We use the HA API to update a state.
+    // NOTE: Storing in state has a 255 char limit.
+    // To be robust, we should store in an ATTRIBUTE.
+    // The HA REST API /api/states/<entity_id> allows setting attributes.
+
+    // First, get current state to preserve other attributes
+    $ch = curl_init("$ha_url/api/states/$target_entity");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ["Authorization: Bearer $ha_token"]);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $res = curl_exec($ch);
+    $current = json_decode($res, true) ?: ['state' => 'OK', 'attributes' => []];
+    curl_close($ch);
+
+    $attributes = $current['attributes'];
+    $attributes["config_$room"] = json_encode([
+        'zones' => $input['zones'] ?? [],
+        'hotspots' => $input['hotspots'] ?? []
+    ]);
+
+    $payload = [
+        'state' => 'Updated ' . date('Y-m-d H:i:s'),
+        'attributes' => $attributes
+    ];
+
+    $ch = curl_init("$ha_url/api/states/$target_entity");
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        "Authorization: Bearer $ha_token",
+        "Content-Type: application/json"
+    ]);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    $result = curl_exec($ch);
+    curl_close($ch);
+
+    echo $result;
+    exit;
+}
+
 if ($entity) {
     $domain = explode('.', $entity)[0];
-    
-    // Détermination automatique du service si l'action est générique
     $service = $action;
     
-    if ($domain === 'button') {
-        $service = 'press';
-    } elseif ($domain === 'script') {
-        $service = 'turn_on';
-    } elseif ($domain === 'vacuum' && $action === 'toggle') {
-        // Si on demande toggle sur un aspirateur, on considère que c'est pour démarrer
-        $service = 'start';
-    }
+    if ($domain === 'button') { $service = 'press'; }
+    elseif ($domain === 'script') { $service = 'turn_on'; }
+    elseif ($domain === 'vacuum' && $action === 'toggle') { $service = 'start'; }
 
     $url = $ha_url . "/api/services/$domain/$service";
     
@@ -39,8 +82,6 @@ if ($entity) {
     curl_close($ch);
 }
 
-// On retire la redirection automatique pour permettre les appels en arrière-plan (AJAX)
-// Si c'est un appel classique, on redirige, sinon on affiche OK
 if (!empty($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) == 'xmlhttprequest') {
     echo "OK";
 } else {
