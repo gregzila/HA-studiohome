@@ -9,50 +9,69 @@
             "img": "Cuisine.jpg",
             "img360": "Cuisine__1.jpg",
             "temp": "sensor.temperature_cuisine_2",
+            "climate": "climate.thermostat_cuisine",
             "vacuum_entity": "button.eve_shortcut_5",
             "window_entity": "binary_sensor.fenetre_cuisine_porte",
             "var_2d": "var.plan_cuisine_data",
-            "var_360": "var.plan_cuisine_360"
+            "var_360": "var.plan_cuisine_360",
+            "config_2d": "config_cuisine_2d.json",
+            "config_360": "config_cuisine_360.json"
         },
         {
             "n": "Salon",
             "icon": "🛋️",
             "img": "Salon.jpg",
-            "img360": "",
+            "img360": "Salon.jpg",
             "temp": "sensor.temp_salon",
+            "climate": "climate.thermostat_salon_2",
             "vacuum_entity": "button.eve_shortcut_6",
             "window_entity": "binary_sensor.fenetre_salon_porte",
-            "var_2d": "var.plan_salon_data"
+            "var_2d": "var.plan_salon_data",
+            "var_360": "var.plan_salon_360",
+            "config_2d": "config_salon_2d.json",
+            "config_360": "config_salon_360.json"
         },
         {
             "n": "Elisa",
             "icon": "🌸",
             "img": "Elisa.jpg",
-            "img360": "",
+            "img360": "Elisa.jpg",
             "temp": "sensor.current_temperature_chambre_elisa",
+            "climate": "climate.thermostat_chambre_elisa_2",
             "vacuum_entity": "button.eve_shortcut_2",
-            "window_entity": "",
-            "var_2d": "var.plan_elisa_data"
+            "window_entity": "binary_sensor.0xa4c138fea27bfbdf_contact",
+            "var_2d": "var.plan_chambre1_data",
+            "var_360": "var.plan_chambre1_360",
+            "config_2d": "config_elisa_2d.json",
+            "config_360": "config_elisa_360.json"
         },
         {
             "n": "Justine",
             "icon": "⭐",
             "img": "Justine.jpg",
-            "img360": "",
+            "img360": "Justine.jpg",
             "temp": "sensor.sensor_temp_justine",
+            "climate": "climate.thermostat_justine",
             "vacuum_entity": "button.eve_shortcut_3",
             "window_entity": "binary_sensor.0xa4c138462fd3310c_contact",
-            "var_2d": "var.plan_justine_data"
+            "var_2d": "var.plan_chambre2_data",
+            "var_360": "var.plan_chambre2_360",
+            "config_2d": "config_justine_2d.json",
+            "config_360": "config_justine_360.json"
         },
         {
             "n": "Parents",
             "icon": "👥",
             "img": "Chambreparents.jpg",
-            "img360": "",
+            "img360": "Chambreparents.jpg",
             "temp": "sensor.current_temperature_chambre_parent",
+            "climate": "climate.thermostat_chambre_parents_2",
             "vacuum_entity": "button.eve_shortcut_1",
-            "window_entity": "",
-            "var_2d": "var.plan_parents_data"
+            "window_entity": "binary_sensor.0xa4c13815453e5c05_contact",
+            "var_2d": "var.plan_chambre3_data",
+            "var_360": "var.plan_chambre3_360",
+            "config_2d": "config_parents_2d.json",
+            "config_360": "config_parents_360.json"
         }
     ]
 }
