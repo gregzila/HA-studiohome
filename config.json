@@ -1,13 +1,13 @@
 {
-    "ha_url": "YOUR_HA_URL",
-    "ha_token": "YOUR_HA_TOKEN",
+    "ha_url": "https://qq5e0tspgj2a22alvsqitgptzj2sz0o4.ui.nabu.casa",
+    "ha_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyM2QwMGZhNDdhYzM0NTgzYmFlM2UzMGRiMWMwMzBjMyIsImlhdCI6MTc2OTQyNzk1MiwiZXhwIjoyMDg0Nzg3OTUyfQ.qCik3fu6D-CqVg6RVuoQjF4g8zbM2ZXtYu3LVxrGVEs",
     "weather_entity": "weather.izon",
-    "plex_token": "YOUR_PLEX_TOKEN",
-    "plex_server_id": "YOUR_PLEX_SERVER_ID",
-    "plex_ip": "YOUR_PLEX_IP",
-    "plex_port": "32400",
-    "dashboard_password": "YOUR_PASSWORD",
+    "dashboard_password": "VOTRE_MOT_DE_PASSE",
     "persistence_entity": "input_text.maison_config",
+    "plex_ip": "192.168.1.XX",
+    "plex_port": "32400",
+    "plex_token": "VOTRE_PLEX_TOKEN",
+    "plex_server_id": "VOTRE_SERVER_ID",
     "rooms": [
         {
             "n": "Cuisine",
@@ -15,7 +15,6 @@
             "img": "Cuisine.jpg",
             "img360": "Cuisine__1.jpg",
             "temp": "sensor.temperature_cuisine_2",
-            "climate": "climate.thermostat_cuisine",
             "vacuum_entity": "button.eve_shortcut_5",
             "window_entity": "binary_sensor.fenetre_cuisine_porte"
         },
@@ -25,7 +24,6 @@
             "img": "Salon.jpg",
             "img360": "",
             "temp": "sensor.temp_salon",
-            "climate": "climate.thermostat_salon_2",
             "vacuum_entity": "button.eve_shortcut_6",
             "window_entity": "binary_sensor.fenetre_salon_porte"
         },
@@ -35,9 +33,8 @@
             "img": "Elisa.jpg",
             "img360": "",
             "temp": "sensor.current_temperature_chambre_elisa",
-            "climate": "climate.thermostat_chambre_elisa_2",
             "vacuum_entity": "button.eve_shortcut_2",
-            "window_entity": "binary_sensor.0xa4c138fea27bfbdf_contact"
+            "window_entity": ""
         },
         {
             "n": "Justine",
@@ -45,7 +42,6 @@
             "img": "Justine.jpg",
             "img360": "",
             "temp": "sensor.sensor_temp_justine",
-            "climate": "climate.thermostat_justine",
             "vacuum_entity": "button.eve_shortcut_3",
             "window_entity": "binary_sensor.0xa4c138462fd3310c_contact"
         },
@@ -55,9 +51,8 @@
             "img": "Chambreparents.jpg",
             "img360": "",
             "temp": "sensor.current_temperature_chambre_parent",
-            "climate": "climate.thermostat_chambre_parents_2",
             "vacuum_entity": "button.eve_shortcut_1",
-            "window_entity": "binary_sensor.0xa4c13815453e5c05_contact"
+            "window_entity": ""
         }
     ]
 }
