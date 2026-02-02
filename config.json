@@ -1,9 +1,9 @@
 {
-    "ha_url": "https://qq5e0tspgj2a22alvsqitgptzj2sz0o4.ui.nabu.casa",
-    "ha_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiIyM2QwMGZhNDdhYzM0NTgzYmFlM2UzMGRiMWMwMzBjMyIsImlhdCI6MTc2OTQyNzk1MiwiZXhwIjoyMDg0Nzg3OTUyfQ.qCik3fu6D-CqVg6RVuoQjF4g8zbM2ZXtYu3LVxrGVEs",
+    "ha_url": "https://VOTRE_INSTANCE.ui.nabu.casa",
+    "ha_token": "VOTRE_TOKEN_HA",
     "weather_entity": "weather.izon",
     "dashboard_password": "VOTRE_MOT_DE_PASSE",
-    "persistence_entity": "input_text.maison_config",
+    "persistence_entity": "input_boolean.storage_hotspots_360",
     "plex_ip": "192.168.1.XX",
     "plex_port": "32400",
     "plex_token": "VOTRE_PLEX_TOKEN",

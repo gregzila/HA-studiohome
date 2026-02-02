@@ -84,6 +84,7 @@
             width: calc(100% - 600px); display: flex; justify-content: space-between; align-items: center; padding: 15px 30px;
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        .glass-header:hover { transform: translateX(-50%) translateY(-2px); }
         .header-left { display: flex; flex-direction: column; }
         .welcome-text {
             font-size: 1.25rem; font-weight: 700;
@@ -279,6 +280,7 @@
             .menu-toggle { display: flex; }
             body { overflow-y: auto; }
             .glass-header { position: relative; width: 100%; top: 0; left: 0; transform: none; border-radius: 0 0 20px 20px; padding: 15px; }
+            .glass-header:hover { transform: translateY(-2px); }
             .header-left { display: none; }
             .room-selector { position: fixed; left: -100%; top: 0; width: 250px; height: 100vh; z-index: 2000; transition: left 0.3s ease; max-width: none; }
             .room-selector.open { left: 0; }
@@ -464,12 +466,15 @@ async function loadGlobalConfig() {
         const res = await fetch('config.json?t=' + Date.now());
         if (!res.ok) throw new Error("Fichier config.json introuvable");
         const config = await res.json();
+        HA_URL = config.ha_url;
+        TOKEN = config.ha_token;
         WEATHER_ENTITY = config.weather_entity;
         ROOMS = config.rooms.map(r => ({
             ...r,
             vacuum: r.vacuum_entity,
             window: r.window_entity
         }));
+        headers = { "Authorization": `Bearer ${TOKEN}`, "Content-Type": "application/json" };
         return true;
     } catch(e) {
         console.error("Erreur chargement config.json:", e);
@@ -486,53 +491,63 @@ async function saveToJSON(silent = false) {
     if (isSaving) return;
     isSaving = true;
     const r = ROOMS[curR];
+    const roomKey = r.n.toLowerCase();
     const btnSave = document.getElementById('btn-save');
 
     if (btnSave && !silent) btnSave.innerHTML = '<i class="fas fa-spinner fa-spin"></i>...';
 
-    const payload = {
-        room: r.n,
-        zones: zones,
-        hotspots: hotspots
-    };
-
-    // 1. TENTATIVE PHP LOCAL
+    // 1. TENTATIVE SAUVEGARDE DIRECTE HA (Solution Propre sans PHP)
     try {
+        const config = await fetch('config.json?t=' + Date.now()).then(r => r.json());
+        const target_entity = config.persistence_entity || 'input_boolean.storage_hotspots_360';
+
+        // On récupère l'état actuel pour fusionner les attributs
+        const current = await getEntityState(target_entity);
+        let attributes = current ? (current.attributes || {}) : {};
+
+        // On nettoie les attributs internes HA
+        delete attributes.friendly_name;
+        delete attributes.icon;
+
+        // On met à jour la pièce actuelle
+        attributes[roomKey] = { zones: zones, hotspots: hotspots };
+
+        const payload = { state: 'on', attributes: attributes };
+
+        const resHA = await fetch(`${HA_URL}/api/states/${target_entity}`, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(payload)
+        });
+
+        if (resHA.ok) {
+            console.log("✅ Sauvegarde Directe HA réussie");
+            if (!silent) { alert(`✅ Sauvegardé (Attributs HA) pour ${r.n} !`); toggleEdit(); }
+            isSaving = false;
+            if (btnSave && !silent) btnSave.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
+            return;
+        }
+    } catch (e) {
+        console.warn("⚠️ Échec sauvegarde directe HA, tentative PHP local...");
+    }
+
+    // 2. TENTATIVE PHP LOCAL (Fallback si supporté)
+    try {
+        const payloadPHP = { room: roomKey, zones: zones, hotspots: hotspots };
         const res = await fetch('save_hotspots.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payloadPHP)
         });
 
         const data = await res.json();
         if (data.status === 'success') {
             console.log("✅ Sauvegarde locale PHP réussie");
             if (!silent) { alert(`✅ Sauvegardé (PHP) pour ${r.n} !`); toggleEdit(); }
-            isSaving = false;
-            if (btnSave && !silent) btnSave.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
-            return;
-        }
-    } catch (e) {
-        console.warn("⚠️ PHP local indisponible ou erreur, tentative fallback HA via Proxy...");
-    }
-
-    // 2. FALLBACK: SAUVEGARDE VIA PROXY API HA
-    try {
-        const resHA = await fetch(`api_ha.php?action=save_config`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-        });
-
-        if (resHA.ok) {
-            console.log("✅ Sauvegarde via Proxy HA réussie");
-            if (!silent) { alert(`✅ Sauvegardé (Fallback HA) pour ${r.n} !`); toggleEdit(); }
-        } else {
-            throw new Error(`Erreur Proxy HA: ${resHA.status}`);
         }
     } catch (e2) {
         console.error("❌ ÉCHEC TOTAL DE SAUVEGARDE:", e2);
-        if (!silent) alert("🚨 IMPOSSIBLE DE SAUVEGARDER\nLe serveur PHP et le fallback HA ont échoué.");
+        if (!silent) alert("🚨 IMPOSSIBLE DE SAUVEGARDER\nLa sauvegarde HA et PHP ont échoué.");
     } finally {
         isSaving = false;
         if (btnSave && !silent) btnSave.innerHTML = '<i class="fas fa-save"></i> Sauvegarder';
@@ -541,55 +556,74 @@ async function saveToJSON(silent = false) {
 
 async function loadFromJSON() {
     const r = ROOMS[curR];
-    const fileName = `config_${r.n.toLowerCase()}.json`;
+    const roomKey = r.n.toLowerCase();
 
-    // 1. Essayer PHP d'abord
+    // 1. Essayer HA (Attributs) d'abord - Source de vérité préférée
     try {
+        const config = await fetch('config.json?t=' + Date.now()).then(r => r.json());
+        const target_entity = config.persistence_entity || 'input_boolean.storage_hotspots_360';
+        const state = await getEntityState(target_entity);
+
+        if (state && state.attributes && state.attributes[roomKey]) {
+            const data = state.attributes[roomKey];
+            const configData = typeof data === 'string' ? JSON.parse(data) : data;
+            zones = configData.zones || [];
+            hotspots = configData.hotspots || [];
+            console.log(`📂 Chargé via Attributs HA (${roomKey})`);
+            return;
+        }
+    } catch (e) {
+        console.warn("⚠️ Impossible de charger via HA, tentative PHP...");
+    }
+
+    // 2. Fallback: charger via PHP
+    try {
+        const fileName = `config_${roomKey}.json`;
         const res = await fetch(`${fileName}?t=${Date.now()}`);
         if (res.ok) {
             const data = await res.json();
             zones = data.zones || [];
             hotspots = data.hotspots || [];
-            return;
-        }
-    } catch(e) {}
-
-    // 2. Fallback: charger via Proxy HA
-    try {
-        const state = await getEntityState(null, 'persistence'); // null entité car le proxy connaît l'entité par défaut
-        const attrName = 'config_' + r.n.toLowerCase();
-
-        if (state && state.attributes && state.attributes[attrName]) {
-            const data = JSON.parse(state.attributes[attrName]);
-            zones = data.zones || [];
-            hotspots = data.hotspots || [];
+            console.log(`📂 Chargé via PHP (${roomKey})`);
         } else {
             zones = []; hotspots = [];
+            console.log(`📂 Aucune config trouvée pour ${roomKey}`);
         }
-    } catch (e2) {
+    } catch(e2) {
         zones = []; hotspots = [];
     }
 }
 
 async function callHA(domain, service, data) {
     try {
-        // On utilise le proxy api_ha.php
-        await fetch(`api_ha.php?action=${service}&entity=${data.entity_id}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(data)
-        });
+        // Direct fetch si headers dispo, sinon proxy
+        if (typeof headers !== 'undefined' && headers.Authorization) {
+            await fetch(`${HA_URL}/api/services/${domain}/${service}`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(data)
+            });
+        } else {
+            await fetch(`api_ha.php?action=${service}&entity=${data.entity_id}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+        }
     } catch(e) { console.error("Error:", e); }
 }
 
-async function getEntityState(entity_id, mode = 'get_state') {
-    const url = mode === 'persistence' ? `api_ha.php?action=get_state&entity=persistence` : `api_ha.php?action=get_state&entity=${entity_id}`;
-    // Note: Pour le mode persistence, le proxy utilisera l'entité configurée par défaut si on modifie api_ha.php pour le gérer.
-    // Mais ici on va passer l'entité de config si on l'a.
+async function getEntityState(entity_id) {
+    if (!entity_id) return null;
     try {
-        const fetchUrl = entity_id ? `api_ha.php?action=get_state&entity=${entity_id}` : `api_ha.php?action=get_state&entity=persistence`;
-        const res = await fetch(fetchUrl);
-        return res.ok ? await res.json() : null;
+        // Direct fetch si headers dispo, sinon proxy
+        if (typeof headers !== 'undefined' && headers.Authorization) {
+            const res = await fetch(`${HA_URL}/api/states/${entity_id}`, { headers: headers });
+            return res.ok ? await res.json() : null;
+        } else {
+            const res = await fetch(`api_ha.php?action=get_state&entity=${entity_id}`);
+            return res.ok ? await res.json() : null;
+        }
     } catch (e) { return null; }
 }
 

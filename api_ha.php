@@ -38,13 +38,17 @@ if ($action === 'save_config') {
     curl_close($ch);
 
     $attributes = $current['attributes'] ?? [];
-    $attributes["config_$room"] = json_encode([
+    // Clean up internal HA attributes that shouldn't be re-sent or could cause issues
+    unset($attributes['friendly_name']);
+    unset($attributes['icon']);
+
+    $attributes["$room"] = [
         'zones' => $input['zones'] ?? [],
         'hotspots' => $input['hotspots'] ?? []
-    ]);
+    ];
 
     $payload = [
-        'state' => 'Updated ' . date('Y-m-d H:i:s'),
+        'state' => 'on',
         'attributes' => $attributes
     ];
 
