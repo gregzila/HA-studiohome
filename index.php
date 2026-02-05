@@ -3,16 +3,17 @@
 session_set_cookie_params(['samesite' => 'None', 'secure' => true, 'httponly' => true]);
 session_start();
 
-// 2. CONFIGURATION GÉNÉRALE (PLEX)
-$password_valide = "rOOt1980*";
-$plex_ip = "192.168.1.52";
-$plex_port = "32400";
-$plex_token = "Q6ezur6EF2RkGcyFDazr";
-$mon_server_id = "49c4ce89313925f56fbb2fe069b514ea706a9877";
+// 2. CONFIGURATION GÉNÉRALE (PLEX ET HA)
+$config = json_decode(file_get_contents('config.json'), true);
+$password_valide = $config['dashboard_password'];
+$plex_ip = $config['plex_ip'];
+$plex_port = $config['plex_port'];
+$plex_token = $config['plex_token'];
+$mon_server_id = $config['plex_server_id'];
 
 // --- CONFIGURATION HOME ASSISTANT ---
-$ha_token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiI3MGExZjE5NjUxNjQ0MDlkOTg5YTQwYjcxYmFiZGFhNyIsImlhdCI6MTc2OTIwNzcwNywiZXhwIjoyMDg0NTY3NzA3fQ.lb_boLkzECcmS1PCwVxzP607Thp8fHXC36jXwTgGdeM"; 
-$ha_url = "http://192.168.1.52:8123";
+$ha_token = $config['ha_token'];
+$ha_url = $config['ha_url'];
 
 function getHaState($entity_id, $url, $token) {
     $ch = curl_init($url . "/api/states/" . $entity_id);
