@@ -9,6 +9,7 @@
             "img": "Cuisine.jpg",
             "img360": "Cuisine__1.jpg",
             "temp": "sensor.temperature_cuisine_2",
+            "climate": "climate.thermostat_cuisine",
             "vacuum_entity": "button.eve_shortcut_5",
             "window_entity": "binary_sensor.fenetre_cuisine_porte"
         },
@@ -18,6 +19,7 @@
             "img": "Salon.jpg",
             "img360": "",
             "temp": "sensor.temp_salon",
+            "climate": "climate.thermostat_salon_2",
             "vacuum_entity": "button.eve_shortcut_6",
             "window_entity": "binary_sensor.fenetre_salon_porte"
         },
@@ -27,6 +29,7 @@
             "img": "Elisa.jpg",
             "img360": "",
             "temp": "sensor.current_temperature_chambre_elisa",
+            "climate": "climate.thermostat_chambre_elisa_2",
             "vacuum_entity": "button.eve_shortcut_2",
             "window_entity": ""
         },
@@ -36,6 +39,7 @@
             "img": "Justine.jpg",
             "img360": "",
             "temp": "sensor.sensor_temp_justine",
+            "climate": "climate.thermostat_justine",
             "vacuum_entity": "button.eve_shortcut_3",
             "window_entity": "binary_sensor.0xa4c138462fd3310c_contact"
         },
@@ -45,6 +49,7 @@
             "img": "Chambreparents.jpg",
             "img360": "",
             "temp": "sensor.current_temperature_chambre_parent",
+            "climate": "climate.thermostat_chambre_parents_2",
             "vacuum_entity": "button.eve_shortcut_1",
             "window_entity": ""
         }
